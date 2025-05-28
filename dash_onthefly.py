@@ -2,6 +2,7 @@ import dash
 from dash import dcc, html, Input, Output, State, callback, MATCH, ALL
 import plotly.graph_objects as go
 import pandas as pd
+# Assuming these are available and work as expected
 from SeasonalPriceUtilitiesN import contractMonths, yearList, getSeasonalPrices, createSpread, createSpread_Custom, createSpread_Calendar, createSpread_Quarterly
 from sqlalchemy import create_engine
 from urllib import parse
@@ -15,7 +16,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv("credential.env")
 
-# Database connection setup
+# Database connection setup (assuming these are correctly loaded from .env)
 server = os.getenv("DB_SERVER")
 database = os.getenv("DB_NAME")
 username = os.getenv("DB_USERNAME")
@@ -59,13 +60,13 @@ layout_onthefly = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.Div([
-                html.H1("Seasonal Trading Analytics", 
-                       className="display-4 fw-bold mb-0 text-primary"),
-                html.P("Advanced Futures Spread Analysis & Risk Management", 
-                      className="lead text-muted mb-0")
+                html.H1("Seasonal Trading Analytics",
+                        className="display-4 fw-bold mb-0 text-primary"),
+                html.P("GCC",
+                       className="lead text-muted mb-0")
             ], className="text-center py-4")
         ])
-    ], className="mb-4"),
+    ], className="mb-5"), # Increased margin-bottom for more space
 
     # Main Configuration Panel
     dbc.Card([
@@ -73,11 +74,11 @@ layout_onthefly = dbc.Container([
             html.Div([
                 html.I(className="fas fa-cog me-2"),
                 html.Span("Trading Configuration", className="fw-bold fs-5")
-            ], className="d-flex align-items-center")
+            ], className="d-flex align-items-center py-2") # Added padding-y to header
         ], className="bg-primary text-white"),
-        
+
         dbc.CardBody([
-            # Trade Type Selection
+            # Trade Type Selection and Global Parameters
             dbc.Row([
                 dbc.Col([
                     html.Label("Strategy Type", className="form-label fw-semibold mb-2"),
@@ -93,20 +94,20 @@ layout_onthefly = dbc.Container([
                         className="shadow-sm",
                         style={'borderRadius': '8px'}
                     ),
-                ], md=6),
+                ], md=4, className="mb-3"), # Added margin-bottom
                 dbc.Col([
-                    html.Label("Analysis Period", className="form-label fw-semibold mb-2"),
+                    html.Label("Analysis Period (Years)", className="form-label fw-semibold mb-2"),
                     dcc.Input(
-                        id='years-back', 
-                        type='number', 
+                        id='years-back',
+                        type='number',
                         value=10,
                         placeholder="Years of historical data",
                         className="form-control shadow-sm",
                         style={'borderRadius': '8px'}
                     ),
-                ], md=3),
+                ], md=4, className="mb-3"), # Added margin-bottom
                 dbc.Col([
-                    html.Label("Expire Reference", className="form-label fw-semibold mb-2"),
+                    html.Label("Roll Flag", className="form-label fw-semibold mb-2"),
                     dcc.Dropdown(
                         id='expire-flag',
                         options=[
@@ -120,30 +121,31 @@ layout_onthefly = dbc.Container([
                         className="shadow-sm",
                         style={'borderRadius': '8px'}
                     ),
-                ], md=3),
-            ], className="mb-4"),
+                ], md=4, className="mb-3"), # Added margin-bottom
+            ], className="mb-4"), # Margin bottom for the entire row
 
-            # Dynamic Strategy Inputs
+            # Dynamic Strategy Inputs Container
             html.Div(id='strategy-inputs-container', children=[
                 # Custom Spread Configuration
                 html.Div(id='custom-spread-inputs', children=[
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Custom Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("Advanced", color="info", className="ms-2")
-                        ]),
+                            dbc.Badge("First instrument is the anchor", color="info", className="ms-2")
+                        ], className="bg-light text-dark py-2 border-bottom"), # Light background for header, border
+
                         dbc.CardBody([
-                            # Headers
+                            # Headers for dynamic inputs
                             dbc.Row([
-                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary"), md=3),
-                                dbc.Col(html.Label('Contract Month', className="fw-semibold text-primary"), md=3),
-                                dbc.Col(html.Label('Position Size', className="fw-semibold text-primary"), md=3),
-                                dbc.Col(html.Label('Actions', className="fw-semibold text-primary"), md=3),
-                            ], className="mb-3 border-bottom pb-2"),
-                            
+                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=4),
+                                dbc.Col(html.Label('Contract Month', className="fw-semibold text-primary mb-0"), md=4),
+                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=4),
+                                # Removed "Actions" column header as buttons are below
+                            ], className="mb-3 align-items-center border-bottom pb-2"),
+
                             # Dynamic Series Container
                             html.Div(id='series-inputs-container'),
-                            
+
                             # Action Buttons
                             dbc.Row([
                                 dbc.Col([
@@ -151,16 +153,16 @@ layout_onthefly = dbc.Container([
                                         dbc.Button([
                                             html.I(className="fas fa-plus me-1"),
                                             "Add Series"
-                                        ], id='add-series-btn', color="success", size="sm"),
+                                        ], id='add-series-btn', color="success", size="sm", className="me-2"), # Added margin-right
                                         dbc.Button([
                                             html.I(className="fas fa-minus me-1"),
                                             "Remove"
                                         ], id='remove-series-btn', color="outline-danger", size="sm"),
                                     ])
-                                ], width="auto")
-                            ], className="mt-3"),
+                                ], width="auto", className="text-center mt-3") # Centered buttons
+                            ], justify="center"), # Justify center the row
                         ])
-                    ], className="border-0 shadow-sm")
+                    ], className="border-0 shadow-sm mb-4") # Added margin-bottom for the card
                 ]),
 
                 # Calendar Spread Configuration
@@ -168,36 +170,43 @@ layout_onthefly = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Calendar Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("Time Spread", color="warning", className="ms-2")
-                        ]),
+                            dbc.Badge("Y vs Y", color="warning", className="ms-2")
+                        ], className="bg-light text-dark py-2 border-bottom"),
+
                         dbc.CardBody([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label('Near Year', className="form-label fw-semibold"),
-                                    dcc.Input(id='calendar-year1', type='number', 
-                                             placeholder='2025', className="form-control shadow-sm"),
-                                ], md=4),
+                                    html.Label('Near Year', className="form-label fw-semibold mb-2"),
+                                    dcc.Input(id='calendar-year1', type='number',
+                                              placeholder='2025', className="form-control shadow-sm"),
+                                ], md=6, className="mb-3"),
                                 dbc.Col([
-                                    html.Label('Far Year', className="form-label fw-semibold"),
-                                    dcc.Input(id='calendar-year2', type='number', 
-                                             placeholder='2026', className="form-control shadow-sm"),
-                                ], md=4),
+                                    html.Label('Far Year', className="form-label fw-semibold mb-2"),
+                                    dcc.Input(id='calendar-year2', type='number',
+                                              placeholder='2026', className="form-control shadow-sm"),
+                                ], md=6, className="mb-3"),
                             ], className="mb-4"),
-                            
+
+                            # Headers for dynamic instruments
+                            dbc.Row([
+                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=6),
+                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=6),
+                            ], className="mb-3 align-items-center border-bottom pb-2"),
+
                             html.Div(id='calendar-instrument-inputs-container'),
-                            
+
                             dbc.ButtonGroup([
                                 dbc.Button([
                                     html.I(className="fas fa-plus me-1"),
                                     "Add Instrument"
-                                ], id='add-calendar-instrument-btn', color="success", size="sm"),
+                                ], id='add-calendar-instrument-btn', color="success", size="sm", className="me-2"),
                                 dbc.Button([
                                     html.I(className="fas fa-minus me-1"),
                                     "Remove"
                                 ], id='remove-calendar-instrument-btn', color="outline-danger", size="sm"),
-                            ], className="mt-3")
+                            ], className="mt-3 d-flex justify-content-center") # Centered buttons
                         ])
-                    ], className="border-0 shadow-sm")
+                    ], className="border-0 shadow-sm mb-4")
                 ]),
 
                 # Quarterly Spread Configuration
@@ -205,44 +214,51 @@ layout_onthefly = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Quarterly Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("Seasonal", color="success", className="ms-2")
-                        ]),
+                            dbc.Badge("Q vs Q", color="success", className="ms-2")
+                        ], className="bg-light text-dark py-2 border-bottom"),
+
                         dbc.CardBody([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label('First Quarter', className="form-label fw-semibold"),
+                                    html.Label('First Quarter', className="form-label fw-semibold mb-2"),
                                     dcc.Dropdown(
                                         id='quarterly-q1',
                                         options=[{'label': f'Q{i}', 'value': f'Q{i}'} for i in range(1,5)],
                                         placeholder='Select Q1...',
                                         className="shadow-sm"
                                     ),
-                                ], md=4),
+                                ], md=6, className="mb-3"),
                                 dbc.Col([
-                                    html.Label('Second Quarter', className="form-label fw-semibold"),
+                                    html.Label('Second Quarter', className="form-label fw-semibold mb-2"),
                                     dcc.Dropdown(
                                         id='quarterly-q2',
                                         options=[{'label': f'Q{i}', 'value': f'Q{i}'} for i in range(1,5)],
                                         placeholder='Select Q2...',
                                         className="shadow-sm"
                                     ),
-                                ], md=4),
+                                ], md=6, className="mb-3"),
                             ], className="mb-4"),
-                            
+
+                            # Headers for dynamic instruments
+                            dbc.Row([
+                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=6),
+                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=6),
+                            ], className="mb-3 align-items-center border-bottom pb-2"),
+
                             html.Div(id='quarterly-instrument-inputs-container'),
-                            
+
                             dbc.ButtonGroup([
                                 dbc.Button([
                                     html.I(className="fas fa-plus me-1"),
                                     "Add Instrument"
-                                ], id='add-quarter-instrument-btn', color="success", size="sm"),
+                                ], id='add-quarter-instrument-btn', color="success", size="sm", className="me-2"),
                                 dbc.Button([
                                     html.I(className="fas fa-minus me-1"),
                                     "Remove"
                                 ], id='remove-quarter-instrument-btn', color="outline-danger", size="sm"),
-                            ], className="mt-3")
+                            ], className="mt-3 d-flex justify-content-center") # Centered buttons
                         ])
-                    ], className="border-0 shadow-sm")
+                    ], className="border-0 shadow-sm mb-4")
                 ]),
             ]),
 
@@ -251,23 +267,23 @@ layout_onthefly = dbc.Container([
                 dbc.Col([
                     html.Label("Output Location", className="form-label fw-semibold mb-2"),
                     dcc.Input(
-                        id='location-out', 
+                        id='location-out',
                         placeholder='e.g., Crude Oil WTI',
                         value='CL',
                         className="form-control shadow-sm",
                         style={'borderRadius': '8px'}
                     ),
-                ], md=6),
+                ], md=6, className="mb-3"),
                 dbc.Col([
                     html.Label("Units", className="form-label fw-semibold mb-2"),
                     dcc.Input(
-                        id='units-out', 
+                        id='units-out',
                         placeholder='e.g., $/BBL',
                         value='$/BBL',
                         className="form-control shadow-sm",
                         style={'borderRadius': '8px'}
                     ),
-                ], md=6),
+                ], md=6, className="mb-3"),
             ], className="mb-4"),
 
             # Generate Button
@@ -276,12 +292,12 @@ layout_onthefly = dbc.Container([
                     dbc.Button([
                         html.I(className="fas fa-chart-line me-2"),
                         "Generate Analysis"
-                    ], id='generate-btn', color="primary", size="lg", 
+                    ], id='generate-btn', color="primary", size="lg",
                        className="w-100 shadow", style={'borderRadius': '10px'})
                 ])
-            ])
+            ], className="mb-3") # Added margin-bottom
         ])
-    ], className="mb-4 shadow border-0", style={'borderRadius': '12px'}),
+    ], className="mb-5 shadow border-0", style={'borderRadius': '12px'}), # Increased margin-bottom for the card
 
     # Analysis Controls
     dbc.Card([
@@ -289,7 +305,7 @@ layout_onthefly = dbc.Container([
             html.Div([
                 html.I(className="fas fa-sliders-h me-2"),
                 html.Span("Analysis Controls", className="fw-bold fs-5")
-            ], className="d-flex align-items-center")
+            ], className="d-flex align-items-center py-2")
         ], className="bg-info text-white"),
         dbc.CardBody([
             html.Label("Monthly Analysis Range", className="form-label fw-semibold mb-3"),
@@ -304,7 +320,7 @@ layout_onthefly = dbc.Container([
                 className="mb-3"
             ),
         ])
-    ], className="mb-4 shadow border-0", style={'borderRadius': '12px'}),
+    ], className="mb-5 shadow border-0", style={'borderRadius': '12px'}),
 
     # Results Section
     dbc.Card([
@@ -312,12 +328,12 @@ layout_onthefly = dbc.Container([
             html.Div([
                 html.I(className="fas fa-analytics me-2"),
                 html.Span("Analysis Results", className="fw-bold fs-5")
-            ], className="d-flex align-items-center")
+            ], className="d-flex align-items-center py-2")
         ], className="bg-success text-white"),
         dbc.CardBody([
             # Status Message
-            html.Div(id='loading-output', className="text-center mb-3"),
-            
+            html.Div(id='loading-output', className="text-center mb-3 fw-bold text-muted"), # Added text-muted
+
             # Loading Component
             dcc.Loading(
                 id="loading-graphs",
@@ -334,10 +350,10 @@ layout_onthefly = dbc.Container([
                                     'displaylogo': False,
                                     'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
                                 },
-                                className="shadow-sm"
+                                className="shadow-sm border rounded" # Added border and rounded
                             )
-                        ], label="Price Evolution", tab_id="price-tab"),
-                        
+                        ], label="Price Evolution", tab_id="price-tab", className="py-3"), # Added padding-y to tab content
+
                         dbc.Tab([
                             dcc.Graph(
                                 id='volatility-graph',
@@ -346,10 +362,10 @@ layout_onthefly = dbc.Container([
                                     'displaylogo': False,
                                     'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
                                 },
-                                className="shadow-sm"
+                                className="shadow-sm border rounded"
                             )
-                        ], label="Volatility Analysis", tab_id="vol-tab"),
-                        
+                        ], label="Volatility Analysis", tab_id="vol-tab", className="py-3"),
+
                         dbc.Tab([
                             dcc.Graph(
                                 id='histogram-graph',
@@ -358,10 +374,10 @@ layout_onthefly = dbc.Container([
                                     'displaylogo': False,
                                     'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
                                 },
-                                className="shadow-sm"
+                                className="shadow-sm border rounded"
                             )
-                        ], label="Distribution", tab_id="hist-tab"),
-                    ], active_tab="price-tab", className="mb-3")
+                        ], label="Distribution", tab_id="hist-tab", className="py-3"),
+                    ], active_tab="price-tab", className="mb-3 nav-pills"), # Used nav-pills for a nicer tab style
                 ]
             )
         ])
@@ -372,8 +388,10 @@ layout_onthefly = dbc.Container([
     dcc.Store(id='num-calendar-instruments-store', data=1),
     dcc.Store(id='num-quarterly-instruments-store', data=1)
 
-], fluid=True, className="px-4 py-3 bg-light min-vh-100")
+], fluid=True, className="px-4 py-4 bg-light min-vh-100") # Increased overall padding-y
 
+
+# Function to register all callbacks for this application
 
 # Function to register all callbacks for this application
 def register_callbacks(app):
