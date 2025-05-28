@@ -50,16 +50,16 @@ Now that you're in your **Documents** folder:
 1. Run the following command to clone the repository:
 
    ```bash
-   git clone https://github.com/mukeshcodeshere/gcc_dash_spread.git
+   git clone https://github.com/mukeshcodeshere/seasonalspread.git
    ```
 
 2. Navigate into the project folder:
 
    ```bash
-   cd gcc_dash_spread
+   cd seasonalspread
    ```
 
-   The project will now be stored in your **Documents** folder, inside the `gcc_dash_spread` directory.
+   The project will now be stored in your **Documents** folder, inside the `seasonalspread` directory.
 
 ---
 
@@ -78,7 +78,7 @@ This sets up a clean Python environment named `work`.
 
 ## 📦 Step 6: Install Project Dependencies
 
-Make sure you're inside the `gcc_dash_spread` folder, then install the required dependencies by running:
+Make sure you're inside the `seasonalspread` folder, then install the required dependencies by running:
 
 ```bash
 pip install -r requirements.txt
@@ -93,7 +93,7 @@ To securely store and use sensitive credentials (like database connection info),
 
 **Steps:**
 
-1. Create a `credential.env` file in the 'gcc_dash_spread' folder.
+1. Create a `credential.env` file in the 'seasonalspread' folder.
  
 2. Add the following content to the `credential.env` file (replace values as needed):
 
@@ -106,6 +106,11 @@ USERNAME_LOGIN=XXX - MV login item
 PASSWORD_LOGIN=XXX - MV login item
 GvWSUSERNAME=GCC018 - GvWS login item
 GvWSPASSWORD=password - GvWS login item
+reference_schemaName= SQL Table
+future_expiry_table_Name= SQL Table
+tradepricetable= SQL Table
+contract_margin_table= SQL Table
+query = SQL QUERY
 ```
 
 3. **Do not upload or commit this credential.env file** 
