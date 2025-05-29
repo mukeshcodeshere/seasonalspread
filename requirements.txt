@@ -12,8 +12,8 @@ gunicorn==23.0.0
 dash_bootstrap_components==2.0.2
 sqlalchemy==2.0.40
 pyodbc==5.2.0
-requests
-urllib
+# requests
+# urllib
 statsmodels==0.14.4
 socket
 pickle
