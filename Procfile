@@ -1,1 +1,1 @@
-web: gunicorn dash_launcher_test:server
+web: gunicorn dash_launcher:server
