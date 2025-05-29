@@ -8,4 +8,5 @@ statsmodels==0.14.4
 scipy==1.15.2
 plotly==6.0.1
 dash==3.0.4
+gunicorn==23.0.0
 #pywin32
