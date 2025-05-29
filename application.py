@@ -1,0 +1,1 @@
+from dash_launcher import server as application
