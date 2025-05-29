@@ -135,8 +135,16 @@ You will be prompted to enter your calculation mode.
 
 Once you've successfully logged in, the application will open in your **web browser** at:
 
-👉 [http://localhost:8050](http://localhost:8050)
+👉 [http://localhost:8050](http://localhost:8050) — *if running locally only*
 
+If you're running the app on your **local network** (to access from other devices on the same network), the app will automatically bind to your machine’s local IP (e.g., `http://192.168.x.x:8050`). No need to manually find or enter the IP — it will be shown in the terminal when the app starts (dash_launcher.py):
+
+```python
+app.run(debug=True, host=get_local_ip(), port=8050)  # host on local network
+# app.run(debug=True, port=8050)  # only locally deployed
+```
+
+🖥️ Just copy the full URL shown in the terminal and open it in any browser on the same network.
 
 ---
 

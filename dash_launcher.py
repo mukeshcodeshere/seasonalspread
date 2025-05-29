@@ -169,6 +169,6 @@ def get_local_ip():
 
 if __name__ == '__main__':
     app.run(debug=True, host=get_local_ip(), port=8050) #host on local network
-    app.run(debug=True,port=8050) #only locally deployed
+    #app.run(debug=True,port=8050) #only locally deployed
 
 
