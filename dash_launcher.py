@@ -3,6 +3,7 @@ from dash import dcc, html, Input, Output, State
 import dash_preset
 import dash_onthefly
 import dash_bootstrap_components as dbc
+import socket
 
 # Initialize Dash app
 # Suppress callback exceptions is important when using dcc.Location for routing
@@ -154,6 +155,20 @@ def display_page(pathname):
 dash_preset.register_callbacks(app)
 dash_onthefly.register_callbacks(app)
 
+
+# Get local IP address dynamically
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Connect to an external host (does not send packets)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
 if __name__ == '__main__':
-    # Run the main Dash application on a single port
-    app.run(debug=True, port=8050)
+    app.run(debug=True, host=get_local_ip(), port=8050) #host on local network
+    app.run(debug=True,port=8050) #only locally deployed
+
+
