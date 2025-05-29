@@ -9,4 +9,5 @@ scipy==1.15.2
 plotly==6.0.1
 dash==3.0.4
 gunicorn==23.0.0
+dash_bootstrap_components==2.0.2
 #pywin32
