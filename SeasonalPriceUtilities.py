@@ -7,9 +7,9 @@ import sys
 from datetime import timedelta, datetime as dt
 from dotenv import load_dotenv
 import os
-# Load environment variables from .env file
-load_dotenv("credential.env")
+from dotenv import load_dotenv
 
+load_dotenv()
 USERNAME = os.getenv("GvWSUSERNAME")
 PASSWORD = os.getenv("GvWSPASSWORD")
 

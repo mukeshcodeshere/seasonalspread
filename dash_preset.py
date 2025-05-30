@@ -26,14 +26,18 @@ from dash_styles import (
     MT_4_CLASS, # Updated MT_4_CLASS
     DATATABLE_STYLE_TABLE, DATATABLE_STYLE_CELL, DATATABLE_STYLE_HEADER, DATATABLE_STYLE_HEADER_CELL
 )
-# Load environment variables from .env file
-load_dotenv("credential.env")
 
-# Database connection setup
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Read from environment variables directly (no dotenv)
 server = os.getenv("DB_SERVER")
 database = os.getenv("DB_NAME")
 username = os.getenv("DB_USERNAME")
 password = os.getenv("DB_PASSWORD")
+schemaName = os.getenv("REFERENCE_SCHEMA")
+table_Name = os.getenv("FUTURE_EXPIRY_TABLE")
 
 connecting_string = (
     f"Driver={{ODBC Driver 18 for SQL Server}};"

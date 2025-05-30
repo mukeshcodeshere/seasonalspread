@@ -11,3 +11,4 @@ credential.env
 *.xlsx
 DailySeasonalProcess.py
 dash_preset_engineering.py
+*.yml

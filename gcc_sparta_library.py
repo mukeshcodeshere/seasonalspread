@@ -7,9 +7,7 @@ from datetime import datetime
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv("credential.env")
-
+load_dotenv()
 
 def connect_to_mv_com_server():
     """Establish connection to MV COM server using credentials from .env file."""

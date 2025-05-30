@@ -25,14 +25,23 @@ from dash_styles import ( # Import shared styles - UPDATED
 )
 
 
-# Load environment variables from .env file
-load_dotenv("credential.env")
+# # Load environment variables from .env file
+# load_dotenv("credential.env")
 
-# Database connection setup (assuming these are correctly loaded from .env)
+# # Database connection setup (assuming these are correctly loaded from .env)
+# server = os.getenv("DB_SERVER")
+# database = os.getenv("DB_NAME")
+# username = os.getenv("DB_USERNAME")
+# password = os.getenv("DB_PASSWORD")
+
+# Read from environment variables directly (no dotenv)
 server = os.getenv("DB_SERVER")
 database = os.getenv("DB_NAME")
 username = os.getenv("DB_USERNAME")
 password = os.getenv("DB_PASSWORD")
+schemaName = os.getenv("REFERENCE_SCHEMA")
+table_Name = os.getenv("FUTURE_EXPIRY_TABLE")
+
 
 connecting_string = (
     f"Driver={{ODBC Driver 18 for SQL Server}};"

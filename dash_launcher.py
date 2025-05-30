@@ -5,14 +5,13 @@ import dash_onthefly
 import dash_bootstrap_components as dbc
 import socket
 from dash_styles import EXTERNAL_STYLESHEETS, INDEX_STRING_CUSTOM_CSS # Import from dash_styles
+import os
 
 # Initialize Dash app
 app = dash.Dash(__name__, external_stylesheets=EXTERNAL_STYLESHEETS, suppress_callback_exceptions=True)
 
 app.title = "Spread Calculation App"  # Set title
 server = app.server                     # Expose server early for deployment
-
-
 # Custom index string to include Font Awesome for icons and custom CSS
 # This ensures consistent styling across both sub-applications
 app.index_string = f'''
@@ -90,7 +89,11 @@ def get_local_ip():
         s.close()
     return ip
 
+# if __name__ == '__main__':
+#     #app.run(debug=True, host=get_local_ip(), port=8050) #host on local network
+#     #app.run(debug=True,port=8050) #only locally deployed
+#     app.run(debug=True) #github azure
+
+
 if __name__ == '__main__':
-    #app.run(debug=True, host=get_local_ip(), port=8050) #host on local network
-    #app.run(debug=True,port=8050) #only locally deployed
-    app.run(debug=True) #github azure
+    app.run(debug=True, host='0.0.0.0', port=8050) #  http://localhost:8050/ will work
