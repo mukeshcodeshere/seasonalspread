@@ -262,10 +262,10 @@ def register_callbacks(app):
             last_hist_trade = historical_df['LastTrade'].max()
             # Calculate next month start from last_hist_trade, ensuring it's not before the earliest current_df date
             next_month_start = (last_hist_trade + pd.offsets.MonthBegin(1)).normalize()
-            
+
             # Filter current_df for dates on or after next_month_start and take up to 252 trading days
             current_filtered = current_df[current_df['Date'] >= next_month_start].sort_values('Date').head(252).copy()
-            
+
             if not current_filtered.empty:
                 current_filtered = current_filtered.reset_index(drop=True)
                 current_filtered['TradingDay'] = range(1, len(current_filtered) + 1)
@@ -412,4 +412,4 @@ def register_callbacks(app):
             return [], []
 
         columns = [{"name": i, "id": i} for i in filtered_df.columns]
-        return filtered_df.to_dict("records"), columns
+        return filtered_df.to_dict('records'), columns

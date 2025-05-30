@@ -107,6 +107,7 @@ layout_onthefly = dbc.Container([
                         style=DROPDOWN_INPUT_STYLE
                     ),
                 ], md=4, className=MB_3_CLASS), # Added margin-bottom
+                ####
                 dbc.Col([
                     html.Label("Analysis Period (Years)", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Input(
@@ -118,8 +119,6 @@ layout_onthefly = dbc.Container([
                         style=DROPDOWN_INPUT_STYLE
                     ),
                 ], md=4, className=MB_3_CLASS), # Added margin-bottom
-                ####
-
                 dbc.Col([
                     html.Label("Roll Flag", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Dropdown(
@@ -909,4 +908,4 @@ def register_callbacks(app):
             showlegend=True
         )
 
-        return fig_price_evolution, fig_volatility, fig_hist, "" # Clear loading message after graphs are generated
+        return fig_price_evolution, fig_volatility, fig_hist, "" # Clear loading message
