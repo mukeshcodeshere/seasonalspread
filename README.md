@@ -1,170 +1,306 @@
-# 🛢️ Dash Spread Calculator – Installation Guide
+# 🛢️ Dash Spread Calculator – Installation & Deployment Guide
 
-This guide will walk you through setting up and running **Dash Spread Calculator** step-by-step.
+This guide walks you through everything — from local setup to containerizing your Dash app and deploying it on Azure Container Instances (ACI).
 
 ---
 
 ## 📥 Step 1: Install Git
 
-1. Download Git from:
+1. Download Git:
    👉 [https://git-scm.com/downloads](https://git-scm.com/downloads)
-2. Follow the installation instructions for your operating system.
+2. Follow the installation instructions for your OS.
 
 ---
 
 ## 📥 Step 2: Install Anaconda
 
-1. Download Anaconda from:
+1. Download Anaconda:
    👉 [https://www.anaconda.com/products/distribution](https://www.anaconda.com/products/distribution)
-2. Follow the installation instructions for your operating system.
+2. Follow the installation instructions for your OS.
 
 ---
 
 ## 📁 Step 3: Navigate to Your Documents Folder
 
-Before cloning the repository, navigate to your **Documents** folder where you want to store the project.
+Open Anaconda Prompt (Windows) or terminal (macOS/Linux), then run:
 
-1. Open **Anaconda Prompt** (on Windows) or your **terminal** (on macOS/Linux).
-2. Run the following command to go to your Documents folder:
+**Windows:**
 
-   **For Windows:**
+```bash
+cd %USERPROFILE%\Documents
+```
 
-   ```bash
-   cd %USERPROFILE%\Documents
-   ```
+**macOS/Linux:**
 
-   **For macOS/Linux:**
-
-   ```bash
-   cd ~/Documents
-   ```
-
-This ensures that the project is stored in your **Documents** folder.
+```bash
+cd ~/Documents
+```
 
 ---
 
 ## 📂 Step 4: Clone the Project Repository
 
-Now that you're in your **Documents** folder:
-
-1. Run the following command to clone the repository:
-
-   ```bash
-   git clone https://github.com/mukeshcodeshere/seasonalspread.git
-   ```
-
-2. Navigate into the project folder:
-
-   ```bash
-   cd seasonalspread
-   ```
-
-   The project will now be stored in your **Documents** folder, inside the `seasonalspread` directory.
+```bash
+git clone https://github.com/mukeshcodeshere/seasonalspread.git
+cd seasonalspread
+```
 
 ---
 
-## 🐍 Step 5: Create & Activate Your Python Environment
-
-In Anaconda Prompt (or terminal), run these commands to create and activate a new environment:
+## 🐍 Step 5: Create & Activate Python Environment
 
 ```bash
 conda create --name work python=3.13.2
 conda activate work
 ```
 
-This sets up a clean Python environment named `work`.
-
 ---
 
-## 📦 Step 6: Install Project Dependencies
-
-Make sure you're inside the `seasonalspread` folder, then install the required dependencies by running:
+## 📦 Step 6: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
 ---
- ## Step 7: Environment Variable Setup Instructions
 
-### 🔐 Environment Variables Setup
+## 🔐 Step 7: Set Up Environment Variables
 
-To securely store and use sensitive credentials (like database connection info), create a file named `.env` in the root directory of the project.
-
-**Steps:**
-
-1. Create a `credential.env` file in the 'seasonalspread' folder.
- 
-2. Add the following content to the `credential.env` file (replace values as needed):
+Create a file `credential.env` in the project root with your sensitive credentials:
 
 ```env
-DB_SERVER=XXX - DB login item
-DB_NAME=XXX - DB login item
-DB_USERNAME=XXX - DB login item
-DB_PASSWORD=XXX - DB login item
-USERNAME_LOGIN=XXX - MV login item
-PASSWORD_LOGIN=XXX - MV login item
-GvWSUSERNAME=GCC018 - GvWS login item
-GvWSPASSWORD=password - GvWS login item
-reference_schemaName= SQL Table
-future_expiry_table_Name= SQL Table
-tradepricetable= SQL Table
-contract_margin_table= SQL Table
-query = SQL QUERY
+DB_SERVER=...
+DB_NAME=...
+DB_USERNAME=...
+DB_PASSWORD=...
+USERNAME_LOGIN=...
+PASSWORD_LOGIN=...
+GvWSUSERNAME=...
+GvWSPASSWORD=...
+reference_schemaName=...
+future_expiry_table_Name=...
+tradepricetable=...
+contract_margin_table=...
+query=...
 ```
 
-3. **Do not upload or commit this credential.env file** 
+> **Do not commit or share this file publicly!**
 
-The application will automatically load these environment variables at runtime using `python-dotenv`.
+The app uses `python-dotenv` to load these automatically.
 
 ---
 
-## ▶️ Step 7: Run the Application
-
-To start the application, run the following command in your terminal:
+## ▶️ Step 8: Run the App Locally
 
 ```bash
 python dash_launcher.py
 ```
 
-You will be prompted to enter your calculation mode.
+Access the app at [http://localhost:8050](http://localhost:8050).
 
 ---
 
-## ✅ Success!
+# 🐳 Dockerizing Your Dash App
 
-Once you've successfully logged in, the application will open in your **web browser** at:
+---
 
-👉 [http://localhost:8050](http://localhost:8050) — *if running locally only*
+## 🔧 Step 9.1: Dockerfile
 
-If you're running the app on your **local network** (to access from other devices on the same network), the app will automatically bind to your machine’s local IP (e.g., `http://192.168.x.x:8050`). No need to manually find or enter the IP — it will be shown in the terminal when the app starts (dash_launcher.py):
+Use this Dockerfile (in your project root) — includes Microsoft ODBC driver setup:
 
-```python
-app.run(debug=True, host=get_local_ip(), port=8050)  # host on local network
-# app.run(debug=True, port=8050)  # only locally deployed
+```dockerfile
+FROM python:3.13-slim
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    gnupg \
+    apt-transport-https \
+    unixodbc \
+    unixodbc-dev \
+    locales \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/ubuntu/22.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && ACCEPT_EULA=Y apt-get install -y msodbcsql18
+
+RUN locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8  
+ENV LC_ALL en_US.UTF-8
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8050
+
+CMD ["python", "dash_launcher.py"]
 ```
 
-🖥️ Just copy the full URL shown in the terminal and open it in any browser on the same network.
-
 ---
 
-### 🔴 To Stop the Application
-
-* **Windows**: In the Anaconda Prompt, press `Ctrl  C`
-* **macOS/Linux**: In the Terminal, press `Cmd  C`
-
-This will shut down the application.
-
----
-
-If you need help, please reach out to the Analysts.
-
----
-
-
-## ▶️ Step X: To update presets
-
-To update the presets, modify the PriceAnalyzeIn.csv with all the presets you want and run the following command in your terminal:
+## 🐳 Step 9.2: Build Docker Image
 
 ```bash
-python PriceBuilding_v101.py
+docker build -t seasonalinput-github-dashapp:latest .
+```
+
+---
+
+## ▶️ Step 9.3: Run Docker Container Locally
+
+```bash
+docker run -p 8050:8050 seasonalinput-github-dashapp:latest
+```
+
+Test the app at [http://localhost:8050](http://localhost:8050).
+
+---
+
+## 🐙 Step 9.4: Push Docker Image to Docker Hub
+
+### Login to Docker Hub
+
+```bash
+docker login
+```
+
+### Tag your image
+
+```bash
+docker tag seasonalinput-github-dashapp:latest yourdockerhubusername/seasonalinput-github-dashapp:latest
+```
+
+Example:
+
+```bash
+docker tag seasonalinput-github-dashapp:latest dreamspartan/seasonalinput-github-dashapp:latest
+```
+
+### Push the image
+
+```bash
+docker push dreamspartan/seasonalinput-github-dashapp:latest
+```
+
+---
+
+## 🧱 Step 9.5: Docker Compose (Optional)
+
+Create `docker-compose.yml` for easier multi-container setups or config:
+
+```yaml
+version: '3.8'
+services:
+  dashapp:
+    build: .
+    ports:
+      - "8050:8050"
+    environment:
+      - ENV_VAR=value
+```
+
+Run with:
+
+```bash
+docker-compose up --build
+```
+
+---
+
+# ☁️ Deploying to Azure Container Instances (ACI)
+
+---
+
+## 🔹 Step 10.1: Deploy via Azure Portal
+
+1. Go to [portal.azure.com](https://portal.azure.com)
+2. Search **Container Instances** → **Create**.
+3. Fill Basics: Subscription, Resource Group, Container name, Region.
+4. Under **Image Source** select **Public Docker Hub**.
+5. Enter image name: `dreamspartan/seasonalinput-github-dashapp:latest`
+6. Configure CPU, memory.
+7. Open port `8050`.
+8. Add environment variables if needed.
+9. Create and wait for deployment.
+10. Access the app at the assigned IP/DNS on port 8050.
+
+---
+
+## 🔹 Step 10.2: Deploy Using Azure CLI
+
+Make sure you have [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and logged in:
+
+```bash
+az login
+```
+
+### Create a resource group (if needed):
+
+```bash
+az group create --name myResourceGroup --location eastus
+```
+
+### Deploy Container Instance:
+
+```bash
+az container create \
+  --resource-group myResourceGroup \
+  --name dashspreadapp \
+  --image dreamspartan/seasonalinput-github-dashapp:latest \
+  --cpu 1 --memory 1.5 \
+  --ports 8050 \
+  --dns-name-label dashspreadapp-unique-label \
+  --environment-variables DB_SERVER=... DB_NAME=... DB_USERNAME=... DB_PASSWORD=...
+```
+
+* Replace environment variables with your actual values.
+* The `--dns-name-label` must be unique across Azure region.
+
+### Check container status:
+
+```bash
+az container show --resource-group myResourceGroup --name dashspreadapp --query "{Status:instanceView.state, IP:ipAddress.ip}" --output table
+```
+
+### Delete container instance:
+
+```bash
+az container delete --resource-group myResourceGroup --name dashspreadapp --yes
+```
+
+---
+
+## 🔄 Updating your ACI container
+
+1. Build and push a new Docker image (tag `latest` or use version tags).
+2. Use Azure Portal or CLI to update container image and restart container:
+
+```bash
+az container restart --resource-group myResourceGroup --name dashspreadapp
+```
+
+---
+
+# Summary of Key Commands
+
+| Command                                      | Description                                |
+| -------------------------------------------- | ------------------------------------------ |
+| `docker build -t imagename .`                | Build Docker image                         |
+| `docker run -p 8050:8050 imagename`          | Run container locally                      |
+| `docker login`                               | Log in to Docker Hub                       |
+| `docker tag imagename username/repo:tag`     | Tag image for Docker Hub                   |
+| `docker push username/repo:tag`              | Push image to Docker Hub                   |
+| `docker-compose up --build`                  | Run multi-container app via Docker Compose |
+| `az login`                                   | Login to Azure CLI                         |
+| `az group create --name myResourceGroup ...` | Create Azure resource group                |
+| `az container create --name ...`             | Create Azure Container Instance            |
+| `az container show --name ...`               | Check container status                     |
+| `az container delete --name ...`             | Delete container instance                  |
+| `az container restart --name ...`            | Restart container instance                 |
