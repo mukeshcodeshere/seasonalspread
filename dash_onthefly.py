@@ -1,3 +1,4 @@
+# dash_onthefly.py
 import dash
 from dash import dcc, html, Input, Output, State, callback, MATCH, ALL
 import plotly.graph_objects as go
@@ -12,6 +13,17 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 from dotenv import load_dotenv
+from dash_styles import ( # Import shared styles - UPDATED
+    CARD_HEADER_COLORS, CONTAINER_FLUID_CLASSES, CARD_COMMON_CLASSES, CARD_BORDER_RADIUS,
+    DROPDOWN_INPUT_STYLE, SHADOW_SM_CLASS, PLOTLY_GRAPH_CONFIG, PLOTLY_TEMPLATE_LIGHT,
+    GRAPH_MARGIN, GRAPH_CONTAINER_CLASSES, TEXT_CENTER_CLASS, TEXT_PRIMARY_CLASS,
+    TEXT_MUTED_CLASS, FW_BOLD_CLASS, FS_4_CLASS, DISPLAY_5_CLASS, LEAD_CLASS, # Updated FS_4_CLASS, DISPLAY_5_CLASS
+    ME_3_CLASS, MB_1_CLASS, MB_2_CLASS, MB_3_CLASS, MB_4_CLASS, MB_5_CLASS, # Updated ME_3_CLASS, MB_1_CLASS
+    PY_3_CLASS, PY_4_CLASS, PY_5_CLASS, W_100_CLASS, D_FLEX_CLASS, # Updated PY_3_CLASS, PY_5_CLASS
+    ALIGN_ITEMS_CENTER_CLASS, JUSTIFY_CONTENT_CENTER_CLASS, MS_3_CLASS, PB_3_CLASS, # Updated MS_3_CLASS, PB_3_CLASS
+    MT_4_CLASS # Updated MT_4_CLASS
+)
+
 
 # Load environment variables from .env file
 load_dotenv("credential.env")
@@ -61,27 +73,27 @@ layout_onthefly = dbc.Container([
         dbc.Col([
             html.Div([
                 html.H1("Seasonal Trading Analytics",
-                        className="display-4 fw-bold mb-0 text-primary"),
+                        className=f"{DISPLAY_5_CLASS} {FW_BOLD_CLASS} {MB_1_CLASS} {TEXT_PRIMARY_CLASS}"), # Updated DISPLAY_5_CLASS, MB_1_CLASS
                 html.P("GCC",
-                       className="lead text-muted mb-0")
-            ], className="text-center py-4")
+                       className=f"{LEAD_CLASS} {TEXT_MUTED_CLASS} {MB_1_CLASS}") # Updated MB_1_CLASS
+            ], className=f"{TEXT_CENTER_CLASS} {PY_4_CLASS}")
         ])
-    ], className="mb-5"), # Increased margin-bottom for more space
+    ], className=MB_5_CLASS), # Increased margin-bottom for more space
 
     # Main Configuration Panel
     dbc.Card([
         dbc.CardHeader([
             html.Div([
-                html.I(className="fas fa-cog me-2"),
-                html.Span("Trading Configuration", className="fw-bold fs-5")
-            ], className="d-flex align-items-center py-2") # Added padding-y to header
-        ], className="bg-primary text-white"),
+                html.I(className=f"fas fa-cog {ME_3_CLASS}"), # Updated ME_3_CLASS
+                html.Span("Trading Configuration", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}") # Updated FS_4_CLASS
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}") # Updated PY_3_CLASS
+        ], className=CARD_HEADER_COLORS["primary"]),
 
         dbc.CardBody([
             # Trade Type Selection and Global Parameters
             dbc.Row([
                 dbc.Col([
-                    html.Label("Strategy Type", className="form-label fw-semibold mb-2"),
+                    html.Label("Strategy Type", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Dropdown(
                         id='type',
                         options=[
@@ -91,23 +103,25 @@ layout_onthefly = dbc.Container([
                         ],
                         value='Custom',
                         placeholder="Select your trading strategy...",
-                        className="shadow-sm",
-                        style={'borderRadius': '8px'}
+                        className=SHADOW_SM_CLASS,
+                        style=DROPDOWN_INPUT_STYLE
                     ),
-                ], md=4, className="mb-3"), # Added margin-bottom
+                ], md=4, className=MB_3_CLASS), # Added margin-bottom
                 dbc.Col([
-                    html.Label("Analysis Period (Years)", className="form-label fw-semibold mb-2"),
+                    html.Label("Analysis Period (Years)", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Input(
                         id='years-back',
                         type='number',
                         value=10,
                         placeholder="Years of historical data",
-                        className="form-control shadow-sm",
-                        style={'borderRadius': '8px'}
+                        className=f"form-control {SHADOW_SM_CLASS}",
+                        style=DROPDOWN_INPUT_STYLE
                     ),
-                ], md=4, className="mb-3"), # Added margin-bottom
+                ], md=4, className=MB_3_CLASS), # Added margin-bottom
+                ####
+
                 dbc.Col([
-                    html.Label("Roll Flag", className="form-label fw-semibold mb-2"),
+                    html.Label("Roll Flag", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Dropdown(
                         id='expire-flag',
                         options=[
@@ -118,11 +132,11 @@ layout_onthefly = dbc.Container([
                             {'label': 'Cash', 'value': 'Cash'}
                         ],
                         value='CL',
-                        className="shadow-sm",
-                        style={'borderRadius': '8px'}
+                        className=SHADOW_SM_CLASS,
+                        style=DROPDOWN_INPUT_STYLE
                     ),
-                ], md=4, className="mb-3"), # Added margin-bottom
-            ], className="mb-4"), # Margin bottom for the entire row
+                ], md=4, className=MB_3_CLASS), # Added margin-bottom
+            ], className=MB_4_CLASS), # Margin bottom for the entire row
 
             # Dynamic Strategy Inputs Container
             html.Div(id='strategy-inputs-container', children=[
@@ -131,17 +145,17 @@ layout_onthefly = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Custom Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("First instrument is the anchor", color="info", className="ms-2")
-                        ], className="bg-light text-dark py-2 border-bottom"), # Light background for header, border
+                            dbc.Badge("First instrument is the anchor", color="info", className=MS_3_CLASS) # Updated MS_3_CLASS
+                        ], className=f"{CARD_HEADER_COLORS['light']} {PY_3_CLASS} border-bottom"), # Updated PY_3_CLASS
 
                         dbc.CardBody([
                             # Headers for dynamic inputs
                             dbc.Row([
-                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=4),
-                                dbc.Col(html.Label('Contract Month', className="fw-semibold text-primary mb-0"), md=4),
-                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=4),
+                                dbc.Col(html.Label('Instrument', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=4), # Updated MB_1_CLASS
+                                dbc.Col(html.Label('Contract Month', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=4), # Updated MB_1_CLASS
+                                dbc.Col(html.Label('Conversion Factor', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=4), # Updated MB_1_CLASS
                                 # Removed "Actions" column header as buttons are below
-                            ], className="mb-3 align-items-center border-bottom pb-2"),
+                            ], className=f"{MB_3_CLASS} {ALIGN_ITEMS_CENTER_CLASS} border-bottom {PB_3_CLASS}"), # Updated MB_3_CLASS, PB_3_CLASS
 
                             # Dynamic Series Container
                             html.Div(id='series-inputs-container'),
@@ -151,18 +165,18 @@ layout_onthefly = dbc.Container([
                                 dbc.Col([
                                     dbc.ButtonGroup([
                                         dbc.Button([
-                                            html.I(className="fas fa-plus me-1"),
+                                            html.I(className=f"fas fa-plus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                             "Add Series"
-                                        ], id='add-series-btn', color="success", size="sm", className="me-2"), # Added margin-right
+                                        ], id='add-series-btn', color="success", size="sm", className=ME_3_CLASS), # Updated ME_3_CLASS
                                         dbc.Button([
-                                            html.I(className="fas fa-minus me-1"),
+                                            html.I(className=f"fas fa-minus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                             "Remove"
                                         ], id='remove-series-btn', color="outline-danger", size="sm"),
                                     ])
-                                ], width="auto", className="text-center mt-3") # Centered buttons
+                                ], width="auto", className=f"{TEXT_CENTER_CLASS} {MT_4_CLASS}") # Updated MT_4_CLASS
                             ], justify="center"), # Justify center the row
                         ])
-                    ], className="border-0 shadow-sm mb-4") # Added margin-bottom for the card
+                    ], className=f"border-0 {SHADOW_SM_CLASS} {MB_4_CLASS}") # Added margin-bottom for the card
                 ]),
 
                 # Calendar Spread Configuration
@@ -170,43 +184,43 @@ layout_onthefly = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Calendar Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("Y vs Y", color="warning", className="ms-2")
-                        ], className="bg-light text-dark py-2 border-bottom"),
+                            dbc.Badge("Y vs Y", color="warning", className=MS_3_CLASS) # Updated MS_3_CLASS
+                        ], className=f"{CARD_HEADER_COLORS['light']} {PY_3_CLASS} border-bottom"), # Updated PY_3_CLASS
 
                         dbc.CardBody([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label('Near Year', className="form-label fw-semibold mb-2"),
+                                    html.Label('Near Year', className=f"form-label fw-semibold {MB_2_CLASS}"),
                                     dcc.Input(id='calendar-year1', type='number',
-                                              placeholder='2025', className="form-control shadow-sm"),
-                                ], md=6, className="mb-3"),
+                                              placeholder='2025', className=f"form-control {SHADOW_SM_CLASS}"),
+                                ], md=6, className=MB_3_CLASS),
                                 dbc.Col([
-                                    html.Label('Far Year', className="form-label fw-semibold mb-2"),
+                                    html.Label('Far Year', className=f"form-label fw-semibold {MB_2_CLASS}"),
                                     dcc.Input(id='calendar-year2', type='number',
-                                              placeholder='2026', className="form-control shadow-sm"),
-                                ], md=6, className="mb-3"),
-                            ], className="mb-4"),
+                                              placeholder='2026', className=f"form-control {SHADOW_SM_CLASS}"),
+                                ], md=6, className=MB_3_CLASS),
+                            ], className=MB_4_CLASS),
 
                             # Headers for dynamic instruments
                             dbc.Row([
-                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=6),
-                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=6),
-                            ], className="mb-3 align-items-center border-bottom pb-2"),
+                                dbc.Col(html.Label('Instrument', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=6), # Updated MB_1_CLASS
+                                dbc.Col(html.Label('Conversion Factor', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=6), # Updated MB_1_CLASS
+                            ], className=f"{MB_3_CLASS} {ALIGN_ITEMS_CENTER_CLASS} border-bottom {PB_3_CLASS}"), # Updated MB_3_CLASS, PB_3_CLASS
 
                             html.Div(id='calendar-instrument-inputs-container'),
 
                             dbc.ButtonGroup([
                                 dbc.Button([
-                                    html.I(className="fas fa-plus me-1"),
+                                    html.I(className=f"fas fa-plus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                     "Add Instrument"
-                                ], id='add-calendar-instrument-btn', color="success", size="sm", className="me-2"),
+                                ], id='add-calendar-instrument-btn', color="success", size="sm", className=ME_3_CLASS), # Updated ME_3_CLASS
                                 dbc.Button([
-                                    html.I(className="fas fa-minus me-1"),
+                                    html.I(className=f"fas fa-minus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                     "Remove"
                                 ], id='remove-calendar-instrument-btn', color="outline-danger", size="sm"),
-                            ], className="mt-3 d-flex justify-content-center") # Centered buttons
+                            ], className=f"{MT_4_CLASS} {D_FLEX_CLASS} {JUSTIFY_CONTENT_CENTER_CLASS}") # Updated MT_4_CLASS # Centered buttons
                         ])
-                    ], className="border-0 shadow-sm mb-4")
+                    ], className=f"border-0 {SHADOW_SM_CLASS} {MB_4_CLASS}")
                 ]),
 
                 # Quarterly Spread Configuration
@@ -214,101 +228,101 @@ layout_onthefly = dbc.Container([
                     dbc.Card([
                         dbc.CardHeader([
                             html.Span("Quarterly Spread Configuration", className="fw-semibold"),
-                            dbc.Badge("Q vs Q", color="success", className="ms-2")
-                        ], className="bg-light text-dark py-2 border-bottom"),
+                            dbc.Badge("Q vs Q", color="success", className=MS_3_CLASS) # Updated MS_3_CLASS
+                        ], className=f"{CARD_HEADER_COLORS['light']} {PY_3_CLASS} border-bottom"), # Updated PY_3_CLASS
 
                         dbc.CardBody([
                             dbc.Row([
                                 dbc.Col([
-                                    html.Label('First Quarter', className="form-label fw-semibold mb-2"),
+                                    html.Label('First Quarter', className=f"form-label fw-semibold {MB_2_CLASS}"),
                                     dcc.Dropdown(
                                         id='quarterly-q1',
                                         options=[{'label': f'Q{i}', 'value': f'Q{i}'} for i in range(1,5)],
                                         placeholder='Select Q1...',
-                                        className="shadow-sm"
+                                        className=SHADOW_SM_CLASS
                                     ),
-                                ], md=6, className="mb-3"),
+                                ], md=6, className=MB_3_CLASS),
                                 dbc.Col([
-                                    html.Label('Second Quarter', className="form-label fw-semibold mb-2"),
+                                    html.Label('Second Quarter', className=f"form-label fw-semibold {MB_2_CLASS}"),
                                     dcc.Dropdown(
                                         id='quarterly-q2',
                                         options=[{'label': f'Q{i}', 'value': f'Q{i}'} for i in range(1,5)],
                                         placeholder='Select Q2...',
-                                        className="shadow-sm"
+                                        className=SHADOW_SM_CLASS
                                     ),
-                                ], md=6, className="mb-3"),
-                            ], className="mb-4"),
+                                ], md=6, className=MB_3_CLASS),
+                            ], className=MB_4_CLASS),
 
                             # Headers for dynamic instruments
                             dbc.Row([
-                                dbc.Col(html.Label('Instrument', className="fw-semibold text-primary mb-0"), md=6),
-                                dbc.Col(html.Label('Conversion Factor', className="fw-semibold text-primary mb-0"), md=6),
-                            ], className="mb-3 align-items-center border-bottom pb-2"),
+                                dbc.Col(html.Label('Instrument', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=6), # Updated MB_1_CLASS
+                                dbc.Col(html.Label('Conversion Factor', className=f"fw-semibold {TEXT_PRIMARY_CLASS} {MB_1_CLASS}"), md=6), # Updated MB_1_CLASS
+                            ], className=f"{MB_3_CLASS} {ALIGN_ITEMS_CENTER_CLASS} border-bottom {PB_3_CLASS}"), # Updated MB_3_CLASS, PB_3_CLASS
 
                             html.Div(id='quarterly-instrument-inputs-container'),
 
                             dbc.ButtonGroup([
                                 dbc.Button([
-                                    html.I(className="fas fa-plus me-1"),
+                                    html.I(className=f"fas fa-plus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                     "Add Instrument"
-                                ], id='add-quarter-instrument-btn', color="success", size="sm", className="me-2"),
+                                ], id='add-quarter-instrument-btn', color="success", size="sm", className=ME_3_CLASS), # Updated ME_3_CLASS
                                 dbc.Button([
-                                    html.I(className="fas fa-minus me-1"),
+                                    html.I(className=f"fas fa-minus {ME_3_CLASS}"), # Updated ME_3_CLASS
                                     "Remove"
                                 ], id='remove-quarter-instrument-btn', color="outline-danger", size="sm"),
-                            ], className="mt-3 d-flex justify-content-center") # Centered buttons
+                            ], className=f"{MT_4_CLASS} {D_FLEX_CLASS} {JUSTIFY_CONTENT_CENTER_CLASS}") # Updated MT_4_CLASS # Centered buttons
                         ])
-                    ], className="border-0 shadow-sm mb-4")
+                    ], className=f"border-0 {SHADOW_SM_CLASS} {MB_4_CLASS}")
                 ]),
             ]),
 
             # Output Configuration
             dbc.Row([
                 dbc.Col([
-                    html.Label("Output Location", className="form-label fw-semibold mb-2"),
+                    html.Label("Output Location", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Input(
                         id='location-out',
                         placeholder='e.g., Crude Oil WTI',
                         value='CL',
-                        className="form-control shadow-sm",
-                        style={'borderRadius': '8px'}
+                        className=f"form-control {SHADOW_SM_CLASS}",
+                        style=DROPDOWN_INPUT_STYLE
                     ),
-                ], md=6, className="mb-3"),
+                ], md=6, className=MB_3_CLASS),
                 dbc.Col([
-                    html.Label("Units", className="form-label fw-semibold mb-2"),
+                    html.Label("Units", className=f"form-label fw-semibold {MB_2_CLASS}"),
                     dcc.Input(
                         id='units-out',
                         placeholder='e.g., $/BBL',
                         value='$/BBL',
-                        className="form-control shadow-sm",
-                        style={'borderRadius': '8px'}
+                        className=f"form-control {SHADOW_SM_CLASS}",
+                        style=DROPDOWN_INPUT_STYLE
                     ),
-                ], md=6, className="mb-3"),
-            ], className="mb-4"),
+                ], md=6, className=MB_3_CLASS),
+            ], className=MB_4_CLASS),
 
             # Generate Button
             dbc.Row([
                 dbc.Col([
                     dbc.Button([
-                        html.I(className="fas fa-chart-line me-2"),
+                        html.I(className=f"fas fa-chart-line {ME_3_CLASS}"), # Updated ME_3_CLASS
                         "Generate Analysis"
                     ], id='generate-btn', color="primary", size="lg",
-                       className="w-100 shadow", style={'borderRadius': '10px'})
+                       className=f"{W_100_CLASS} shadow", style={'borderRadius': '10px'})
                 ])
-            ], className="mb-3") # Added margin-bottom
+            ], className=MB_3_CLASS) # Added margin-bottom
         ])
-    ], className="mb-5 shadow border-0", style={'borderRadius': '12px'}), # Increased margin-bottom for the card
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS), # Increased margin-bottom for the card
 
     # Analysis Controls
     dbc.Card([
         dbc.CardHeader([
             html.Div([
-                html.I(className="fas fa-sliders-h me-2"),
-                html.Span("Analysis Controls", className="fw-bold fs-5")
-            ], className="d-flex align-items-center py-2")
-        ], className="bg-info text-white"),
+                html.I(className=f"fas fa-sliders-h {ME_3_CLASS}"), # Updated ME_3_CLASS
+                html.Span("Analysis Controls", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}") # Updated FS_4_CLASS
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}") # Updated PY_3_CLASS
+        ], className=CARD_HEADER_COLORS["info"]),
         dbc.CardBody([
-            html.Label("Monthly Analysis Range", className="form-label fw-semibold mb-3"),
+            html.Label("Monthly Analysis Range", className=f"form-label fw-semibold {MB_3_CLASS}"),
             dcc.RangeSlider(
                 id='month-slider',
                 min=1, max=12, step=1, value=[1, 12],
@@ -317,22 +331,22 @@ layout_onthefly = dbc.Container([
                     'style': {'fontSize': '12px', 'fontWeight': 'bold'}
                 } for i in range(1, 13)},
                 tooltip={"placement": "bottom", "always_visible": True},
-                className="mb-3"
+                className=MB_3_CLASS
             ),
         ])
-    ], className="mb-5 shadow border-0", style={'borderRadius': '12px'}),
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 
     # Results Section
     dbc.Card([
         dbc.CardHeader([
             html.Div([
-                html.I(className="fas fa-analytics me-2"),
-                html.Span("Analysis Results", className="fw-bold fs-5")
-            ], className="d-flex align-items-center py-2")
-        ], className="bg-success text-white"),
+                html.I(className=f"fas fa-analytics {ME_3_CLASS}"), # Updated ME_3_CLASS
+                html.Span("Analysis Results", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}") # Updated FS_4_CLASS
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}") # Updated PY_3_CLASS
+        ], className=CARD_HEADER_COLORS["success"]),
         dbc.CardBody([
             # Status Message
-            html.Div(id='loading-output', className="text-center mb-3 fw-bold text-muted"), # Added text-muted
+            html.Div(id='loading-output', className=f"{TEXT_CENTER_CLASS} {MB_3_CLASS} {FW_BOLD_CLASS} {TEXT_MUTED_CLASS}"), # Added text-muted
 
             # Loading Component
             dcc.Loading(
@@ -345,53 +359,39 @@ layout_onthefly = dbc.Container([
                         dbc.Tab([
                             dcc.Graph(
                                 id='price-evolution-graph',
-                                config={
-                                    'displayModeBar': True,
-                                    'displaylogo': False,
-                                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                                },
-                                className="shadow-sm border rounded" # Added border and rounded
+                                config=PLOTLY_GRAPH_CONFIG,
+                                className=GRAPH_CONTAINER_CLASSES
                             )
-                        ], label="Price Evolution", tab_id="price-tab", className="py-3"), # Added padding-y to tab content
+                        ], label="Price Evolution", tab_id="price-tab", className=PY_3_CLASS), # Added padding-y to tab content
 
                         dbc.Tab([
                             dcc.Graph(
                                 id='volatility-graph',
-                                config={
-                                    'displayModeBar': True,
-                                    'displaylogo': False,
-                                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                                },
-                                className="shadow-sm border rounded"
+                                config=PLOTLY_GRAPH_CONFIG,
+                                className=GRAPH_CONTAINER_CLASSES
                             )
-                        ], label="Volatility Analysis", tab_id="vol-tab", className="py-3"),
+                        ], label="Volatility Analysis", tab_id="vol-tab", className=PY_3_CLASS),
 
                         dbc.Tab([
                             dcc.Graph(
                                 id='histogram-graph',
-                                config={
-                                    'displayModeBar': True,
-                                    'displaylogo': False,
-                                    'modeBarButtonsToRemove': ['pan2d', 'lasso2d']
-                                },
-                                className="shadow-sm border rounded"
+                                config=PLOTLY_GRAPH_CONFIG,
+                                className=GRAPH_CONTAINER_CLASSES
                             )
-                        ], label="Distribution", tab_id="hist-tab", className="py-3"),
-                    ], active_tab="price-tab", className="mb-3 nav-pills"), # Used nav-pills for a nicer tab style
+                        ], label="Distribution", tab_id="hist-tab", className=PY_3_CLASS),
+                    ], active_tab="price-tab", className=f"{MB_3_CLASS} nav-pills"), # Used nav-pills for a nicer tab style
                 ]
             )
         ])
-    ], className="shadow border-0", style={'borderRadius': '12px'}),
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 
     # Data Stores (keep these)
     dcc.Store(id='num-series-store', data=4),
     dcc.Store(id='num-calendar-instruments-store', data=1),
     dcc.Store(id='num-quarterly-instruments-store', data=1)
 
-], fluid=True, className="px-4 py-4 bg-light min-vh-100") # Increased overall padding-y
+], fluid=True, className=CONTAINER_FLUID_CLASSES) # Increased overall padding-y
 
-
-# Function to register all callbacks for this application
 
 # Function to register all callbacks for this application
 def register_callbacks(app):
@@ -444,20 +444,20 @@ def register_callbacks(app):
                         id={'type': 'series-name-input', 'index': i},
                         placeholder=f'Series {i+1}',
                         value=default_series_names[i] if i < len(default_series_names) else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                     dbc.Col(dcc.Dropdown(
                         id={'type': 'contract-month-dropdown', 'index': i},
                         options=[{'label': v['abr'], 'value': k} for k, v in futuresContractDict.items()],
                         value=default_contract_months[i] if i < len(default_contract_months) else None,
                         placeholder=f"Contract {i+1}",
-                        className="mb-2"
+                        className=MB_2_CLASS
                     ), md=4),
                     dbc.Col(dcc.Input(
                         id={'type': 'conversion-factor-input', 'index': i},
                         type='number',
                         value=default_conversion_factors[i] if i < len(default_conversion_factors) else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                 ])
             )
@@ -492,14 +492,14 @@ def register_callbacks(app):
                         id={'type': 'calendar-instrument-name-input', 'index': i},
                         placeholder=f'Instrument {i+1}',
                         value='CL' if i == 0 else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                     dbc.Col(dcc.Input(
                         id={'type': 'calendar-conversion-factor-input', 'index': i},
                         type='number',
                         placeholder=f'Factor {i+1}',
                         value=1 if i == 0 else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                 ])
             )
@@ -534,14 +534,14 @@ def register_callbacks(app):
                         id={'type': 'quarterly-instrument-name-input', 'index': i},
                         placeholder=f'Instrument {i+1}',
                         value='CL' if i == 0 else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                     dbc.Col(dcc.Input(
                         id={'type': 'quarterly-conversion-factor-input', 'index': i},
                         type='number',
                         placeholder=f'Factor {i+1}',
                         value=1 if i == 0 else None,
-                        className="mb-2 w-100"
+                        className=f"{MB_2_CLASS} {W_100_CLASS}"
                     ), md=4),
                 ])
             )
@@ -671,13 +671,13 @@ def register_callbacks(app):
                         continue
 
             if not series_data_list:
-                return go.Figure().update_layout(title_text="Error: At least one valid series is required for Custom trade type."), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one valid series is required for Custom trade type.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
             spread = createSpread_Custom(series_data_list, last_trade, year_list1)
 
         elif trade_type == 'Calendar':
             if not (calendar_year1 and calendar_year2 and calendar_instrument_names and calendar_conversion_factors):
-                return go.Figure().update_layout(title_text="Error: Missing inputs for Calendar Spread."), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: Missing inputs for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
             instrument_cf_list = []
             for i in range(len(calendar_instrument_names)):
@@ -688,7 +688,7 @@ def register_callbacks(app):
                     })
 
             if not instrument_cf_list:
-                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Calendar Spread."), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
             current_year = datetime.now().year % 100
             historical_years_for_graph = [str(y % 100) for y in range(current_year - years_back, current_year + 1)]
@@ -706,7 +706,7 @@ def register_callbacks(app):
 
         elif trade_type == 'Quarterly':
             if not (quarterly_q1 and quarterly_q2 and quarterly_instrument_names and quarterly_conversion_factors):
-                return go.Figure().update_layout(title_text="Error: Missing inputs for Quarterly Spread."), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: Missing inputs for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
             instrument_cf_list = []
             for i in range(len(quarterly_instrument_names)):
@@ -717,7 +717,7 @@ def register_callbacks(app):
                     })
 
             if not instrument_cf_list:
-                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Quarterly Spread."), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
             current_year = datetime.now().year % 100
             year_list_for_graph = [str(y % 100) for y in range(current_year - years_back, current_year + 1)]
@@ -733,15 +733,15 @@ def register_callbacks(app):
             )
 
         else:
-            return go.Figure().update_layout(title_text="Invalid Trade Type Selected."), go.Figure(), go.Figure(), ""
+            return go.Figure().update_layout(title_text="Invalid Trade Type Selected.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
         if spread.empty:
-            return go.Figure().update_layout(title_text="No spread data generated. Check inputs."), go.Figure(), go.Figure(), ""
+            return go.Figure().update_layout(title_text="No spread data generated. Check inputs.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
 
 
         # Calculate volatility
         spread_vol = spread.diff().rolling(20).std() * 2
-
+        ###############
         # --- Seasonal Price Evolution Graph ---
         fig_price_evolution = go.Figure()
         for year in year_list_for_graph[:-1]:
@@ -759,10 +759,12 @@ def register_callbacks(app):
             title_text=f"<b>Seasonal Price Evolution ({units_out or 'Value'})</b>",
             title_x=0.5,
             hovermode="x unified",
-            template="plotly_white",
+            font_color='black',  # Add this line
+            paper_bgcolor='white', # Add this line
+            template=PLOTLY_TEMPLATE_LIGHT,
             height=400,
-            margin=dict(l=50, r=50, t=80, b=50),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            margin=GRAPH_MARGIN,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         fig_price_evolution.update_xaxes(
             tickformat="%b %d",
@@ -789,10 +791,12 @@ def register_callbacks(app):
             title_text=f"<b>Var/Unit (20-Day Rolling Std Dev * 2)</b>",
             title_x=0.5,
             hovermode="x unified",
-            template="plotly_white",
+            font_color='black',  # Add this line
+            paper_bgcolor='white', # Add this line
+            template=PLOTLY_TEMPLATE_LIGHT,
             height=400,
-            margin=dict(l=50, r=50, t=80, b=50),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+            margin=GRAPH_MARGIN,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         )
         fig_volatility.update_xaxes(
             tickformat="%b %d",
@@ -897,8 +901,9 @@ def register_callbacks(app):
             title_x=0.5,
             xaxis_title_text=units_out or "Price",
             yaxis_title_text="Frequency",
-            template="plotly_white",
-            hovermode="x unified",
+            font_color='black',  # Add this line
+            paper_bgcolor='white', # Add this line
+            template=PLOTLY_TEMPLATE_LIGHT,
             height=400,
             margin=dict(l=50, r=50, t=50, b=50),
             showlegend=True

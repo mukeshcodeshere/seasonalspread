@@ -1,18 +1,31 @@
 import dash
-from dash import Dash, html, dcc, Input, Output,dash_table
+from dash import Dash, html, dcc, Input, Output, dash_table
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
-from SeasonalPriceUtilitiesN import contractMonths, yearList, getSeasonalPrices, createSpread, createSpread_Custom, createSpread_Calendar, createSpread_Quarterly
+# from SeasonalPriceUtilitiesN import contractMonths, yearList, getSeasonalPrices, createSpread, createSpread_Custom, createSpread_Calendar, createSpread_Quarterly
+# Assuming SeasonalPriceUtilitiesN is not directly used in the Dash app itself for this problem,
+# but rather the data from the SQL table is pre-processed or contains the 'spread' column.
+# If these functions are meant to be used dynamically, they would need to be integrated into the callbacks.
 from sqlalchemy import create_engine
 from urllib import parse
-import dash_bootstrap_components as dbc
 import datetime
 from datetime import datetime, timedelta
 import numpy as np
 import os
 from dotenv import load_dotenv
-
+# Import shared styles - UPDATED
+from dash_styles import (
+    CARD_HEADER_COLORS, CONTAINER_FLUID_CLASSES, CARD_COMMON_CLASSES, CARD_BORDER_RADIUS,
+    DROPDOWN_INPUT_STYLE, SHADOW_SM_CLASS, PLOTLY_GRAPH_CONFIG, PLOTLY_TEMPLATE_LIGHT,
+    GRAPH_MARGIN, GRAPH_CONTAINER_CLASSES, TEXT_CENTER_CLASS, TEXT_PRIMARY_CLASS,
+    TEXT_MUTED_CLASS, FW_BOLD_CLASS, FS_4_CLASS, DISPLAY_5_CLASS, LEAD_CLASS, # Updated FS_4_CLASS, DISPLAY_5_CLASS
+    ME_3_CLASS, MB_1_CLASS, MB_2_CLASS, MB_3_CLASS, MB_4_CLASS, MB_5_CLASS, # Updated ME_3_CLASS, MB_1_CLASS
+    PY_3_CLASS, PY_4_CLASS, PY_5_CLASS, W_100_CLASS, D_FLEX_CLASS, # Updated PY_3_CLASS, PY_5_CLASS
+    ALIGN_ITEMS_CENTER_CLASS, JUSTIFY_CONTENT_CENTER_CLASS, MS_3_CLASS, PB_3_CLASS, # Updated MS_3_CLASS, PB_3_CLASS
+    MT_4_CLASS, # Updated MT_4_CLASS
+    DATATABLE_STYLE_TABLE, DATATABLE_STYLE_CELL, DATATABLE_STYLE_HEADER, DATATABLE_STYLE_HEADER_CELL
+)
 # Load environment variables from .env file
 load_dotenv("credential.env")
 
@@ -45,107 +58,185 @@ data["LastTrade"] = pd.to_datetime(data["LastTrade"], errors="coerce")
 
 # Define the layout for the "Preset Calculation" application
 layout_preset = dbc.Container([
-    html.H2("Seasonal Spread Analysis"),
+    html.H2("Seasonal Spread Analysis", className=f"{TEXT_CENTER_CLASS} {TEXT_PRIMARY_CLASS} {MB_4_CLASS} {FW_BOLD_CLASS}"),
 
-    dbc.Row([
-        dbc.Col([dcc.Dropdown(id='group-dropdown', placeholder='Select Group')]),
-        dbc.Col([dcc.Dropdown(id='region-dropdown', placeholder='Select Region')]),
-        dbc.Col([dcc.Dropdown(id='instrument-dropdown', placeholder='Select Instrument')]),
-        dbc.Col([dcc.Dropdown(id='month-dropdown', placeholder='Select Month')]),
-    ]),
+    dbc.Card([
+        dbc.CardHeader([
+            html.Div([
+                html.I(className=f"fas fa-filter {ME_3_CLASS}"),
+                html.Span("Filter Options", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
+        ], className=CARD_HEADER_COLORS["primary"]),
+        dbc.CardBody([
+            dbc.Row([
+                dbc.Col([
+                    html.Label("Group", className=f"form-label fw-semibold {MB_2_CLASS}"),
+                    dcc.Dropdown(id='group-dropdown', placeholder='Select Group', className=SHADOW_SM_CLASS, style=DROPDOWN_INPUT_STYLE)
+                ], md=3, className=MB_3_CLASS),
+                dbc.Col([
+                    html.Label("Type", className=f"form-label fw-semibold {MB_2_CLASS}"),
+                    dcc.Dropdown(id='type-dropdown', placeholder='Select Type', className=SHADOW_SM_CLASS, style=DROPDOWN_INPUT_STYLE)
+                ], md=3, className=MB_3_CLASS),
+                dbc.Col([
+                    html.Label("Region", className=f"form-label fw-semibold {MB_2_CLASS}"),
+                    dcc.Dropdown(id='region-dropdown', placeholder='Select Region', className=SHADOW_SM_CLASS, style=DROPDOWN_INPUT_STYLE)
+                ], md=3, className=MB_3_CLASS),
+                dbc.Col([
+                    html.Label("Name (Instrument)", className=f"form-label fw-semibold {MB_2_CLASS}"),
+                    dcc.Dropdown(id='name-dropdown', placeholder='Select Instrument Name', className=SHADOW_SM_CLASS, style=DROPDOWN_INPUT_STYLE)
+                ], md=3, className=MB_3_CLASS),
+                dbc.Col([
+                    html.Label("Month", className=f"form-label fw-semibold {MB_2_CLASS}"),
+                    dcc.Dropdown(id='month-dropdown', placeholder='Select Month', className=SHADOW_SM_CLASS, style=DROPDOWN_INPUT_STYLE)
+                ], md=3, className=MB_3_CLASS),
+            ], className=MB_4_CLASS),
+        ])
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 
-    html.Br(),
-    dcc.Graph(id='spread-figure'),
-    html.Br(),
-    dcc.Graph(id='spread-histogram'),
+    dbc.Card([
+        dbc.CardHeader([
+            html.Div([
+                html.I(className=f"fas fa-chart-line {ME_3_CLASS}"),
+                html.Span("Seasonal Spread Chart", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
+        ], className=CARD_HEADER_COLORS["info"]),
+        dbc.CardBody([
+            dcc.Graph(id='spread-figure', config=PLOTLY_GRAPH_CONFIG, className=GRAPH_CONTAINER_CLASSES),
+        ])
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 
-    html.H4("Filtered Data Preview"),
-    dash_table.DataTable(
-        id='data-preview',
-        page_size=10,
-        style_table={'overflowX': 'auto'},
-        style_cell={
-            'backgroundColor': 'black',
-            'color': 'white',
-            'textAlign': 'left',
-            'fontSize': 12,
-        },
-        style_header={
-            'backgroundColor': 'rgb(30, 30, 30)',
-            'fontWeight': 'bold'
-        }
-    )
-], fluid=True)
+    dbc.Card([
+        dbc.CardHeader([
+            html.Div([
+                html.I(className=f"fas fa-chart-bar {ME_3_CLASS}"),
+                html.Span("Spread Distribution Histogram", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
+        ], className=CARD_HEADER_COLORS["info"]),
+        dbc.CardBody([
+            dcc.Graph(id='spread-histogram', config=PLOTLY_GRAPH_CONFIG, className=GRAPH_CONTAINER_CLASSES),
+        ])
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
+
+
+    dbc.Card([
+        dbc.CardHeader([
+            html.Div([
+                html.I(className=f"fas fa-table {ME_3_CLASS}"),
+                html.Span("Filtered Data Preview", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
+        ], className=CARD_HEADER_COLORS["success"]),
+        dbc.CardBody([
+            dash_table.DataTable(
+                id='data-preview',
+                page_size=10,
+                style_table=DATATABLE_STYLE_TABLE,
+                style_cell=DATATABLE_STYLE_CELL,
+                style_header=DATATABLE_STYLE_HEADER
+            )
+        ])
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS)
+
+], fluid=True, className=CONTAINER_FLUID_CLASSES)
 
 
 # Function to register all callbacks for this application
 def register_callbacks(app):
-    # Dropdown: Group
+    # Dropdown: Group (Initial population)
     @app.callback(
         Output('group-dropdown', 'options'),
-        Input('group-dropdown', 'id')
+        Output('group-dropdown', 'value'), # Clear value on initial load
+        Input('group-dropdown', 'id') # Dummy input to trigger initial population
     )
     def populate_group(_):
         groups = sorted(data['Group'].dropna().unique())
-        return [{'label': g, 'value': g} for g in groups]
+        return [{'label': g, 'value': g} for g in groups], None
 
-    # Dropdown: Region
+    # Dropdown: Type (Cascading from Group)
+    @app.callback(
+        Output('type-dropdown', 'options'),
+        Output('type-dropdown', 'value'), # Clear value when options change
+        Input('group-dropdown', 'value')
+    )
+    def update_type(group):
+        if group:
+            types = sorted(data[data['Group'] == group]['Type'].dropna().unique())
+            return [{'label': t, 'value': t} for t in types], None
+        return [], None
+
+    # Dropdown: Region (Cascading from Group and Type)
     @app.callback(
         Output('region-dropdown', 'options'),
-        Input('group-dropdown', 'value')
+        Output('region-dropdown', 'value'), # Clear value when options change
+        Input('group-dropdown', 'value'),
+        Input('type-dropdown', 'value')
     )
-    def update_region(group):
-        if group:
-            regions = sorted(data[data['Group'] == group]['Region'].dropna().unique())
-            return [{'label': r, 'value': r} for r in regions]
-        return []
-
-    # Dropdown: Instrument
-    @app.callback(
-        Output('instrument-dropdown', 'options'),
-        Input('region-dropdown', 'value'),
-        Input('group-dropdown', 'value')
-    )
-    def update_instrument(region, group):
-        if group and region:
-            instruments = sorted(data[
+    def update_region(group, commodity_type): # Renamed 'type' to 'commodity_type' to avoid conflict with Python's built-in type()
+        if group and commodity_type:
+            regions = sorted(data[
                 (data['Group'] == group) &
+                (data['Type'] == commodity_type)
+            ]['Region'].dropna().unique())
+            return [{'label': r, 'value': r} for r in regions], None
+        return [], None
+
+    # Dropdown: Name (InstrumentName) (Cascading from Group, Type, and Region)
+    @app.callback(
+        Output('name-dropdown', 'options'),
+        Output('name-dropdown', 'value'), # Clear value when options change
+        Input('group-dropdown', 'value'),
+        Input('type-dropdown', 'value'),
+        Input('region-dropdown', 'value')
+    )
+    def update_name(group, commodity_type, region):
+        if group and commodity_type and region:
+            names = sorted(data[
+                (data['Group'] == group) &
+                (data['Type'] == commodity_type) &
                 (data['Region'] == region)
             ]['InstrumentName'].dropna().unique())
-            return [{'label': i, 'value': i} for i in instruments]
-        return []
+            return [{'label': n, 'value': n} for n in names], None
+        return [], None
 
-    # Dropdown: Month
+    # Dropdown: Month (Cascading from Group, Type, Region, and Name)
     @app.callback(
         Output('month-dropdown', 'options'),
-        Input('instrument-dropdown', 'value'),
+        Output('month-dropdown', 'value'), # Clear value when options change
+        Input('group-dropdown', 'value'),
+        Input('type-dropdown', 'value'),
         Input('region-dropdown', 'value'),
-        Input('group-dropdown', 'value')
+        Input('name-dropdown', 'value')
     )
-    def update_month(instrument, region, group):
-        if group and region and instrument:
+    def update_month(group, commodity_type, region, instrument_name):
+        if group and commodity_type and region and instrument_name:
             months = sorted(data[
                 (data['Group'] == group) &
+                (data['Type'] == commodity_type) &
                 (data['Region'] == region) &
-                (data['InstrumentName'] == instrument)
+                (data['InstrumentName'] == instrument_name)
             ]['Month'].dropna().unique())
-            return [{'label': m, 'value': m} for m in months]
-        return []
+            return [{'label': m, 'value': m} for m in months], None
+        return [], None
 
     # Callback for seasonal chart and histogram
     @app.callback(
         Output('spread-figure', 'figure'),
         Output('spread-histogram', 'figure'),
         Input('group-dropdown', 'value'),
+        Input('type-dropdown', 'value'),
         Input('region-dropdown', 'value'),
-        Input('instrument-dropdown', 'value'),
+        Input('name-dropdown', 'value'),
         Input('month-dropdown', 'value')
     )
-    def update_figure(group, region, instrument, month):
+    def update_figure(group, commodity_type, region, instrument_name, month):
+        # Ensure all necessary filters are selected before attempting to plot
+        if not all([group, commodity_type, region, instrument_name, month]):
+            return go.Figure(), go.Figure() # Return empty figures
+
         filtered_df = data[
             (data['Group'] == group) &
+            (data['Type'] == commodity_type) &
             (data['Region'] == region) &
-            (data['InstrumentName'] == instrument) &
+            (data['InstrumentName'] == instrument_name) &
             (data['Month'] == month)
         ].copy()
 
@@ -169,12 +260,17 @@ def register_callbacks(app):
 
         if not historical_df.empty and not current_df.empty:
             last_hist_trade = historical_df['LastTrade'].max()
+            # Calculate next month start from last_hist_trade, ensuring it's not before the earliest current_df date
             next_month_start = (last_hist_trade + pd.offsets.MonthBegin(1)).normalize()
+            
+            # Filter current_df for dates on or after next_month_start and take up to 252 trading days
             current_filtered = current_df[current_df['Date'] >= next_month_start].sort_values('Date').head(252).copy()
+            
             if not current_filtered.empty:
                 current_filtered = current_filtered.reset_index(drop=True)
                 current_filtered['TradingDay'] = range(1, len(current_filtered) + 1)
                 seasonal_data["Current"] = current_filtered
+
 
         for label, df in seasonal_data.items():
             fig.add_trace(go.Scatter(
@@ -182,8 +278,8 @@ def register_callbacks(app):
                 y=df["spread"],
                 mode="lines",
                 name=label,
-                line=dict(color="white" if label == "Current" else None,
-                          width=3 if label == "Current" else 1.5),
+                line=dict(color="black" if label == "Current" else None,
+                            width=3 if label == "Current" else 1.5),
                 opacity=1.0 if label == "Current" else 0.6
             ))
 
@@ -191,9 +287,9 @@ def register_callbacks(app):
             title="Seasonal Spread by Year",
             xaxis_title="Trading Day (1 to 252)",
             yaxis_title="Spread",
-            margin=dict(l=40, r=40, t=60, b=40),
+            margin=GRAPH_MARGIN,
             legend_title="Season",
-            template='plotly_dark'
+            template=PLOTLY_TEMPLATE_LIGHT
         )
 
         hist_fig = go.Figure()
@@ -208,8 +304,8 @@ def register_callbacks(app):
             title="Distribution of Spread (Histogram)",
             xaxis_title="Spread",
             yaxis_title="Frequency",
-            template="plotly_dark",
-            margin=dict(l=40, r=40, t=60, b=40)
+            template=PLOTLY_TEMPLATE_LIGHT,
+            margin=GRAPH_MARGIN
         )
 
         return fig, hist_fig
@@ -219,15 +315,20 @@ def register_callbacks(app):
         Output('data-preview', 'data'),
         Output('data-preview', 'columns'),
         Input('group-dropdown', 'value'),
+        Input('type-dropdown', 'value'),
         Input('region-dropdown', 'value'),
-        Input('instrument-dropdown', 'value'),
+        Input('name-dropdown', 'value'),
         Input('month-dropdown', 'value')
     )
-    def update_table(group, region, instrument, month):
+    def update_table(group, commodity_type, region, instrument_name, month):
+        if not all([group, commodity_type, region, instrument_name, month]):
+            return [], [] # Return empty data and columns
+
         filtered_df = data[
             (data['Group'] == group) &
+            (data['Type'] == commodity_type) &
             (data['Region'] == region) &
-            (data['InstrumentName'] == instrument) &
+            (data['InstrumentName'] == instrument_name) &
             (data['Month'] == month)
         ].copy()
 
