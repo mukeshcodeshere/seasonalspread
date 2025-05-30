@@ -291,7 +291,7 @@ def register_callbacks(app):
             legend_title="Season",
             template=PLOTLY_TEMPLATE_LIGHT
         )
-
+        ####
         hist_fig = go.Figure()
         if not filtered_df.empty and 'spread' in filtered_df.columns:
             spread_data = filtered_df["spread"].dropna()
@@ -299,10 +299,11 @@ def register_callbacks(app):
             if not spread_data.empty:
                 hist_fig.add_trace(go.Histogram(
                     x=spread_data,
-                    marker_color='lightblue',
-                    nbinsx=50,  # Increased bins
+                    marker_color='#1f77b4',  # A nice blue color
+                    nbinsx=100,  # Increased bins for more detail
                     name='Spread Distribution',
-                    hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>"
+                    hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>",
+                    opacity=0.7
                 ))
 
                 median_val = spread_data.median()
@@ -330,35 +331,41 @@ def register_callbacks(app):
                     text=stats_text,
                     showarrow=False,
                     align="left",
-                    bgcolor="white",
+                    bgcolor="rgba(255, 255, 255, 0.8)",  # Slightly transparent white background
                     bordercolor="black",
                     borderwidth=1,
                     borderpad=5,
-                    font=dict(size=10, color="black")
+                    font=dict(size=12, color="black")
                 )
 
-                hist_fig.add_vline(x=median_val, line_dash="dash", line_color="green",
+                hist_fig.add_vline(x=median_val, line=dict(dash="dash", color="green", width=2),
                                      annotation_text=f"Median: {median_val:.2f}",
-                                     annotation_position="top left", name="Median")
+                                     annotation_position="top left", name="Median",
+                                     annotation_font_color="green")
 
-                hist_fig.add_vline(x=median_val + std_dev, line_dash="dot", line_color="purple",
+                hist_fig.add_vline(x=median_val + std_dev, line=dict(dash="dot", color="orange", width=1.5),
                                      annotation_text=f"+1 SD: {(median_val + std_dev):.2f}",
-                                     annotation_position="top right", name="+1 SD")
-                hist_fig.add_vline(x=median_val - std_dev, line_dash="dot", line_color="purple",
+                                     annotation_position="top right", name="+1 SD",
+                                     annotation_font_color="orange")
+                hist_fig.add_vline(x=median_val - std_dev, line=dict(dash="dot", color="orange", width=1.5),
                                      annotation_text=f"-1 SD: {(median_val - std_dev):.2f}",
-                                     annotation_position="bottom left", name="-1 SD")
+                                     annotation_position="bottom left", name="-1 SD",
+                                     annotation_font_color="orange")
 
-                hist_fig.add_vline(x=median_val + (2 * std_dev), line_dash="dot", line_color="orange",
+                hist_fig.add_vline(x=median_val + (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
                                      annotation_text=f"+2 SD: {(median_val + (2 * std_dev)):.2f}",
-                                     annotation_position="top right", name="+2 SD")
-                hist_fig.add_vline(x=median_val - (2 * std_dev), line_dash="dot", line_color="orange",
+                                     annotation_position="top right", name="+2 SD",
+                                     annotation_font_color="red")
+                hist_fig.add_vline(x=median_val - (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
                                      annotation_text=f"-2 SD: {(median_val - (2 * std_dev)):.2f}",
-                                     annotation_position="bottom left", name="-2 SD")
+                                     annotation_position="bottom left", name="-2 SD",
+                                     annotation_font_color="red")
 
                 if latest_value is not None:
-                    hist_fig.add_vline(x=latest_value, line_dash="solid", line_color="blue", line_width=2,
+                    hist_fig.add_vline(x=latest_value, line=dict(dash="solid", color="blue", width=3),
                                          annotation_text=f"Latest: {latest_value:.2f}",
-                                         annotation_position="bottom right", name="Latest Value")
+                                         annotation_position="bottom right", name="Latest Value",
+                                         annotation_font_color="blue")
             else:
                 hist_fig.add_annotation(text="No spread data available for the selected filters.",
                                          xref="paper", yref="paper",
@@ -378,6 +385,8 @@ def register_callbacks(app):
             margin=GRAPH_MARGIN,
             showlegend=True # Ensure legend is shown for vlines
         )
+
+        ###
 
         return fig, hist_fig
 

@@ -316,7 +316,7 @@ layout_onthefly = dbc.Container([
         dbc.CardHeader([
             html.Div([
                 html.I(className=f"fas fa-sliders-h {ME_3_CLASS}"),
-                html.Span("Analysis Controls", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+                html.Span("Histogram Analysis Controls", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
             ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
         ], className=CARD_HEADER_COLORS["info"]),
         dbc.CardBody([
@@ -821,6 +821,7 @@ def register_callbacks(app):
         )
 
         # --- Histogram Graph ---
+# --- Histogram Graph ---
         fig_hist = go.Figure()
 
         if start_month is not None and end_month is not None:
@@ -837,9 +838,11 @@ def register_callbacks(app):
             if not month_data.empty:
                 fig_hist.add_trace(go.Histogram(
                     x=month_data,
-                    nbinsx=50,
+                    nbinsx=100,  # Increased bins for more detail
                     name='Price Distribution',
-                    hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>"
+                    hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>",
+                    marker_color='#1f77b4',  # A nice blue color
+                    opacity=0.7
                 ))
 
                 median_val = month_data.median()
@@ -868,35 +871,41 @@ def register_callbacks(app):
                     text=stats_text,
                     showarrow=False,
                     align="left",
-                    bgcolor="white",
+                    bgcolor="rgba(255, 255, 255, 0.8)",  # Slightly transparent white background
                     bordercolor="black",
                     borderwidth=1,
                     borderpad=5,
-                    font=dict(size=10, color="black")
+                    font=dict(size=12, color="black")
                 )
 
-                fig_hist.add_vline(x=median_val, line_dash="dash", line_color="green",
+                fig_hist.add_vline(x=median_val, line=dict(dash="dash", color="green", width=2),
                                      annotation_text=f"Median: {median_val:.2f}",
-                                     annotation_position="top left", name="Median")
+                                     annotation_position="top left", name="Median",
+                                     annotation_font_color="green")
 
-                fig_hist.add_vline(x=median_val + std_dev, line_dash="dot", line_color="purple",
+                fig_hist.add_vline(x=median_val + std_dev, line=dict(dash="dot", color="orange", width=1.5),
                                      annotation_text=f"+1 SD: {(median_val + std_dev):.2f}",
-                                     annotation_position="top right", name="+1 SD")
-                fig_hist.add_vline(x=median_val - std_dev, line_dash="dot", line_color="purple",
+                                     annotation_position="top right", name="+1 SD",
+                                     annotation_font_color="orange")
+                fig_hist.add_vline(x=median_val - std_dev, line=dict(dash="dot", color="orange", width=1.5),
                                      annotation_text=f"-1 SD: {(median_val - std_dev):.2f}",
-                                     annotation_position="bottom left", name="-1 SD")
+                                     annotation_position="bottom left", name="-1 SD",
+                                     annotation_font_color="orange")
 
-                fig_hist.add_vline(x=median_val + (2 * std_dev), line_dash="dot", line_color="orange",
+                fig_hist.add_vline(x=median_val + (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
                                      annotation_text=f"+2 SD: {(median_val + (2 * std_dev)):.2f}",
-                                     annotation_position="top right", name="+2 SD")
-                fig_hist.add_vline(x=median_val - (2 * std_dev), line_dash="dot", line_color="orange",
+                                     annotation_position="top right", name="+2 SD",
+                                     annotation_font_color="red")
+                fig_hist.add_vline(x=median_val - (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
                                      annotation_text=f"-2 SD: {(median_val - (2 * std_dev)):.2f}",
-                                     annotation_position="bottom left", name="-2 SD")
+                                     annotation_position="bottom left", name="-2 SD",
+                                     annotation_font_color="red")
 
                 if latest_value is not None:
-                    fig_hist.add_vline(x=latest_value, line_dash="solid", line_color="blue", line_width=2,
+                    fig_hist.add_vline(x=latest_value, line=dict(dash="solid", color="blue", width=3),
                                          annotation_text=f"Latest: {latest_value:.2f}",
-                                         annotation_position="bottom right", name="Latest Value")
+                                         annotation_position="bottom right", name="Latest Value",
+                                         annotation_font_color="blue")
             else:
                 fig_hist.add_annotation(text=f"No data available for the selected month range.",
                                          xref="paper", yref="paper",
