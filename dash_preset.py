@@ -294,18 +294,89 @@ def register_callbacks(app):
 
         hist_fig = go.Figure()
         if not filtered_df.empty and 'spread' in filtered_df.columns:
-            hist_fig.add_trace(go.Histogram(
-                x=filtered_df["spread"],
-                marker_color='lightblue',
-                nbinsx=50
-            ))
+            spread_data = filtered_df["spread"].dropna()
+
+            if not spread_data.empty:
+                hist_fig.add_trace(go.Histogram(
+                    x=spread_data,
+                    marker_color='lightblue',
+                    nbinsx=50,  # Increased bins
+                    name='Spread Distribution',
+                    hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>"
+                ))
+
+                median_val = spread_data.median()
+                std_dev = spread_data.std()
+                mean_val = spread_data.mean()
+                min_val = spread_data.min()
+                max_val = spread_data.max()
+                latest_value = spread_data.iloc[-1] if not spread_data.empty else None
+
+
+                stats_text = (
+                    f"<b>Statistics:</b><br>"
+                    f"Median: {median_val:.2f}<br>"
+                    f"Mean: {mean_val:.2f}<br>"
+                    f"Std Dev: {std_dev:.2f}<br>"
+                    f"Min: {min_val:.2f}<br>"
+                    f"Max: {max_val:.2f}"
+                )
+                if latest_value is not None:
+                    stats_text += f"<br>Latest: {latest_value:.2f}"
+
+                hist_fig.add_annotation(
+                    xref="paper", yref="paper",
+                    x=0.98, y=0.98,
+                    text=stats_text,
+                    showarrow=False,
+                    align="left",
+                    bgcolor="white",
+                    bordercolor="black",
+                    borderwidth=1,
+                    borderpad=5,
+                    font=dict(size=10, color="black")
+                )
+
+                hist_fig.add_vline(x=median_val, line_dash="dash", line_color="green",
+                                     annotation_text=f"Median: {median_val:.2f}",
+                                     annotation_position="top left", name="Median")
+
+                hist_fig.add_vline(x=median_val + std_dev, line_dash="dot", line_color="purple",
+                                     annotation_text=f"+1 SD: {(median_val + std_dev):.2f}",
+                                     annotation_position="top right", name="+1 SD")
+                hist_fig.add_vline(x=median_val - std_dev, line_dash="dot", line_color="purple",
+                                     annotation_text=f"-1 SD: {(median_val - std_dev):.2f}",
+                                     annotation_position="bottom left", name="-1 SD")
+
+                hist_fig.add_vline(x=median_val + (2 * std_dev), line_dash="dot", line_color="orange",
+                                     annotation_text=f"+2 SD: {(median_val + (2 * std_dev)):.2f}",
+                                     annotation_position="top right", name="+2 SD")
+                hist_fig.add_vline(x=median_val - (2 * std_dev), line_dash="dot", line_color="orange",
+                                     annotation_text=f"-2 SD: {(median_val - (2 * std_dev)):.2f}",
+                                     annotation_position="bottom left", name="-2 SD")
+
+                if latest_value is not None:
+                    hist_fig.add_vline(x=latest_value, line_dash="solid", line_color="blue", line_width=2,
+                                         annotation_text=f"Latest: {latest_value:.2f}",
+                                         annotation_position="bottom right", name="Latest Value")
+            else:
+                hist_fig.add_annotation(text="No spread data available for the selected filters.",
+                                         xref="paper", yref="paper",
+                                         x=0.5, y=0.5, showarrow=False,
+                                         font=dict(size=16, color="gray"))
+        else:
+            hist_fig.add_annotation(text="No spread data to display histogram.",
+                                     xref="paper", yref="paper",
+                                     x=0.5, y=0.5, showarrow=False,
+                                     font=dict(size=16, color="gray"))
 
         hist_fig.update_layout(
             title="Distribution of Spread (Histogram)",
             xaxis_title="Spread",
             yaxis_title="Frequency",
             template=PLOTLY_TEMPLATE_LIGHT,
-            margin=GRAPH_MARGIN
+            margin=GRAPH_MARGIN,
+            showlegend=True # Ensure legend is shown for vlines
         )
 
         return fig, hist_fig

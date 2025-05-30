@@ -818,7 +818,7 @@ def register_callbacks(app):
             if not month_data.empty:
                 fig_hist.add_trace(go.Histogram(
                     x=month_data,
-                    nbinsx=30,
+                    nbinsx=50, # Increased bins
                     name='Price Distribution',
                     hovertemplate="<b>Range:</b> %{x:.2f}<br><b>Frequency:</b> %{y}<extra></extra>"
                 ))
