@@ -17,11 +17,11 @@ from dash_styles import ( # Import shared styles - UPDATED
     CARD_HEADER_COLORS, CONTAINER_FLUID_CLASSES, CARD_COMMON_CLASSES, CARD_BORDER_RADIUS,
     DROPDOWN_INPUT_STYLE, SHADOW_SM_CLASS, PLOTLY_GRAPH_CONFIG, PLOTLY_TEMPLATE_LIGHT,
     GRAPH_MARGIN, GRAPH_CONTAINER_CLASSES, TEXT_CENTER_CLASS, TEXT_PRIMARY_CLASS,
-    TEXT_MUTED_CLASS, FW_BOLD_CLASS, FS_4_CLASS, DISPLAY_5_CLASS, LEAD_CLASS, # Updated FS_4_CLASS, DISPLAY_5_CLASS
-    ME_3_CLASS, MB_1_CLASS, MB_2_CLASS, MB_3_CLASS, MB_4_CLASS, MB_5_CLASS, # Updated ME_3_CLASS, MB_1_CLASS
-    PY_3_CLASS, PY_4_CLASS, PY_5_CLASS, W_100_CLASS, D_FLEX_CLASS, # Updated PY_3_CLASS, PY_5_CLASS
-    ALIGN_ITEMS_CENTER_CLASS, JUSTIFY_CONTENT_CENTER_CLASS, MS_3_CLASS, PB_3_CLASS, # Updated MS_3_CLASS, PB_3_CLASS
-    MT_4_CLASS # Updated MT_4_CLASS
+    TEXT_MUTED_CLASS, FW_BOLD_CLASS, FS_4_CLASS, DISPLAY_5_CLASS, LEAD_CLASS,
+    ME_3_CLASS, MB_1_CLASS, MB_2_CLASS, MB_3_CLASS, MB_4_CLASS, MB_5_CLASS,
+    PY_3_CLASS, PY_4_CLASS, PY_5_CLASS, W_100_CLASS, D_FLEX_CLASS,
+    ALIGN_ITEMS_CENTER_CLASS, JUSTIFY_CONTENT_CENTER_CLASS, MS_3_CLASS, PB_3_CLASS,
+    MT_4_CLASS
 )
 
 
@@ -298,7 +298,7 @@ layout_onthefly = dbc.Container([
                 ], md=6, className=MB_3_CLASS),
             ], className=MB_4_CLASS),
 
-            # Generate Button
+            # Generate Button and CSV Output Checkbox
             dbc.Row([
                 dbc.Col([
                     dbc.Button([
@@ -306,7 +306,16 @@ layout_onthefly = dbc.Container([
                         "Generate Analysis"
                     ], id='generate-btn', color="primary", size="lg",
                        className=f"{W_100_CLASS} shadow", style={'borderRadius': '10px'})
-                ])
+                ], md=8),
+                dbc.Col([
+                    dbc.Checklist(
+                        options=[{"label": "Output CSV", "value": 1}],
+                        value=[],  # Default to unchecked
+                        id="output-csv-checkbox",
+                        switch=True, # Makes it a switch style
+                        className=f"form-check-inline {ALIGN_ITEMS_CENTER_CLASS} {D_FLEX_CLASS} h-100"
+                    ),
+                ], md=4, className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {JUSTIFY_CONTENT_CENTER_CLASS}")
             ], className=MB_3_CLASS)
         ])
     ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
@@ -399,7 +408,9 @@ layout_onthefly = dbc.Container([
     # Data Stores (keep these)
     dcc.Store(id='num-series-store', data=4),
     dcc.Store(id='num-calendar-instruments-store', data=1),
-    dcc.Store(id='num-quarterly-instruments-store', data=1)
+    dcc.Store(id='num-quarterly-instruments-store', data=1),
+    # Add a store to hold the generated CSV data if needed for download
+    dcc.Store(id='csv-data-store')
 
 ], fluid=True, className=CONTAINER_FLUID_CLASSES)
 
@@ -564,9 +575,10 @@ def register_callbacks(app):
         Output('volatility-graph', 'figure'),
         Output('histogram-graph', 'figure'),
         Output('loading-output', 'children'),
+        Output('csv-data-store', 'data'), # Add output for CSV data storage
         [Input('generate-btn', 'n_clicks'),
-         Input('start-month-dropdown', 'value'), # Changed from month-slider
-         Input('end-month-dropdown', 'value')],  # Changed from month-slider
+         Input('start-month-dropdown', 'value'),
+         Input('end-month-dropdown', 'value')],
         [State('type', 'value'),
          # Custom Spread States
          State({'type': 'series-name-input', 'index': ALL}, 'value'),
@@ -584,29 +596,21 @@ def register_callbacks(app):
          State({'type': 'quarterly-conversion-factor-input', 'index': ALL}, 'value'),
 
          State('years-back', 'value'), State('expire-flag', 'value'),
-         State('location-out', 'value'), State('units-out', 'value')]
+         State('location-out', 'value'), State('units-out', 'value'),
+         State('output-csv-checkbox', 'value')] # State of the new checkbox
     )
-    def generate_graphs(n_clicks, start_month, end_month, trade_type, # Changed selected_month_range to start_month, end_month
-                        # Custom
+    def generate_graphs(n_clicks, start_month, end_month, trade_type,
                         series_names, contract_months, conversion_factors,
-                        # Calendar
                         calendar_year1, calendar_year2, calendar_instrument_names, calendar_conversion_factors,
-                        # Quarterly
                         quarterly_q1, quarterly_q2, quarterly_instrument_names, quarterly_conversion_factors,
+                        years_back, expire_flag, loc_out, units_out, output_csv):
 
-                        years_back, expire_flag, loc_out, units_out):
         if not n_clicks:
-            # Initial return: empty figures and no loading message
-            return go.Figure(), go.Figure(), go.Figure(), ""
+            return go.Figure(), go.Figure(), go.Figure(), "", None # Return None for csv_data_store initially
 
-        # Display loading message and estimated time
         loading_message = "Generating graphs... This may take a few moments depending on the data size."
-
         # Initial return with loading message, and empty figures
-        # This immediately updates the loading-output while the heavy computation runs
-        # The figures will be updated once the computation is complete
-        # Dash will automatically manage the dcc.Loading component based on the output updates
-        return go.Figure(), go.Figure(), go.Figure(), loading_message
+        return go.Figure(), go.Figure(), go.Figure(), loading_message, None
 
 
     @app.callback(
@@ -614,9 +618,10 @@ def register_callbacks(app):
         Output('volatility-graph', 'figure', allow_duplicate=True),
         Output('histogram-graph', 'figure', allow_duplicate=True),
         Output('loading-output', 'children', allow_duplicate=True),
+        Output('csv-data-store', 'data', allow_duplicate=True), # Allow duplicate for this output
         [Input('generate-btn', 'n_clicks'),
-         Input('start-month-dropdown', 'value'), # Changed from month-slider
-         Input('end-month-dropdown', 'value')],  # Changed from month-slider
+         Input('start-month-dropdown', 'value'),
+         Input('end-month-dropdown', 'value')],
         State('type', 'value'),
         # Custom Spread States
         State({'type': 'series-name-input', 'index': ALL}, 'value'),
@@ -634,16 +639,14 @@ def register_callbacks(app):
         State({'type': 'quarterly-conversion-factor-input', 'index': ALL}, 'value'),
         State('years-back', 'value'), State('expire-flag', 'value'),
         State('location-out', 'value'), State('units-out', 'value'),
-        prevent_initial_call=True # Prevent this callback from firing on app load
+        State('output-csv-checkbox', 'value'), # State of the new checkbox
+        prevent_initial_call=True
     )
-    def perform_graph_generation(n_clicks, start_month, end_month, trade_type, # Changed selected_month_range to start_month, end_month
+    def perform_graph_generation(n_clicks, start_month, end_month, trade_type,
                                  series_names, contract_months, conversion_factors,
                                  calendar_year1, calendar_year2, calendar_instrument_names, calendar_conversion_factors,
                                  quarterly_q1, quarterly_q2, quarterly_instrument_names, quarterly_conversion_factors,
-                                 years_back, expire_flag, loc_out, units_out):
-
-        # This part of the callback will perform the heavy lifting and update the graphs
-        # after the initial loading message has been displayed.
+                                 years_back, expire_flag, loc_out, units_out, output_csv):
 
         # Get expire data
         query = f"SELECT * FROM [Reference].[FuturesExpire] WHERE Ticker = '{expire_flag}'"
@@ -684,13 +687,13 @@ def register_callbacks(app):
                         continue
 
             if not series_data_list:
-                return go.Figure().update_layout(title_text="Error: At least one valid series is required for Custom trade type.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one valid series is required for Custom trade type.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
             spread = createSpread_Custom(series_data_list, last_trade, year_list1)
 
         elif trade_type == 'Calendar':
             if not (calendar_year1 and calendar_year2 and calendar_instrument_names and calendar_conversion_factors):
-                return go.Figure().update_layout(title_text="Error: Missing inputs for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: Missing inputs for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
             instrument_cf_list = []
             for i in range(len(calendar_instrument_names)):
@@ -701,7 +704,7 @@ def register_callbacks(app):
                     })
 
             if not instrument_cf_list:
-                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Calendar Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
             current_year = datetime.now().year % 100
             historical_years_for_graph = [str(y % 100) for y in range(current_year - years_back, current_year + 1)]
@@ -719,7 +722,7 @@ def register_callbacks(app):
 
         elif trade_type == 'Quarterly':
             if not (quarterly_q1 and quarterly_q2 and quarterly_instrument_names and quarterly_conversion_factors):
-                return go.Figure().update_layout(title_text="Error: Missing inputs for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: Missing inputs for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
             instrument_cf_list = []
             for i in range(len(quarterly_instrument_names)):
@@ -730,7 +733,7 @@ def register_callbacks(app):
                     })
 
             if not instrument_cf_list:
-                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+                return go.Figure().update_layout(title_text="Error: At least one instrument with conversion factor is required for Quarterly Spread.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
             current_year = datetime.now().year % 100
             year_list_for_graph = [str(y % 100) for y in range(current_year - years_back, current_year + 1)]
@@ -746,10 +749,10 @@ def register_callbacks(app):
             )
 
         else:
-            return go.Figure().update_layout(title_text="Invalid Trade Type Selected.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+            return go.Figure().update_layout(title_text="Invalid Trade Type Selected.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
         if spread.empty:
-            return go.Figure().update_layout(title_text="No spread data generated. Check inputs.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), ""
+            return go.Figure().update_layout(title_text="No spread data generated. Check inputs.", template=PLOTLY_TEMPLATE_LIGHT, margin=GRAPH_MARGIN), go.Figure(), go.Figure(), "", None
 
 
         # Calculate volatility
@@ -821,7 +824,6 @@ def register_callbacks(app):
         )
 
         # --- Histogram Graph ---
-# --- Histogram Graph ---
         fig_hist = go.Figure()
 
         if start_month is not None and end_month is not None:
@@ -936,4 +938,103 @@ def register_callbacks(app):
             showlegend=True
         )
 
-        return fig_price_evolution, fig_volatility, fig_hist, "" # Clear loading message
+        # --- CSV Generation Logic ---
+        csv_output_data = None # Initialize to None
+
+        if 1 in output_csv: # Check if the checkbox is checked (value 1 is present)
+            csv_data = {}
+            csv_data['rollFlag'] = expire_flag
+            csv_data['yearsBack'] = years_back
+
+            csv_data['tickerList'] = []
+            csv_data['contractMonthsList'] = []
+            csv_data['yearOffsetList'] = []
+            csv_data['weightsList'] = []
+            csv_data['convList'] = []
+            csv_data['desc'] = ''
+            csv_data['group'] = ''
+            csv_data['region'] = loc_out
+
+            if trade_type == 'Custom':
+                csv_data['Name'] = 'Custom Spread'
+                csv_data['months'] = ''
+                csv_data['desc'] = 'Custom Spread Calculation'
+
+                for i in range(len(series_names)):
+                    s_name = series_names[i]
+                    c_month = contract_months[i]
+                    cf = conversion_factors[i]
+                    if s_name and c_month is not None and cf is not None:
+                        csv_data['tickerList'].append(f"'{s_name}'")
+                        csv_data['contractMonthsList'].append(f"'{c_month}'")
+                        csv_data['weightsList'].append(str(cf)) # Store as string, not with quotes for numerical values
+                        csv_data['convList'].append(str(cf))
+                        csv_data['yearOffsetList'].append('0')
+
+                csv_data['tickerList'] = f"[{','.join(csv_data['tickerList'])}]"
+                csv_data['contractMonthsList'] = f"[{','.join(csv_data['contractMonthsList'])}]"
+                csv_data['yearOffsetList'] = f"[{','.join(csv_data['yearOffsetList'])}]"
+                csv_data['weightsList'] = f"[{','.join(csv_data['weightsList'])}]"
+                csv_data['convList'] = f"[{','.join(csv_data['convList'])}]"
+
+            elif trade_type == 'Calendar':
+                csv_data['Name'] = f"Calendar Spread {calendar_year1} vs {calendar_year2}"
+                csv_data['months'] = ''
+                csv_data['desc'] = f"Calendar Spread {calendar_year1} vs {calendar_year2}"
+
+                if calendar_instrument_names and calendar_conversion_factors:
+                    for i in range(len(calendar_instrument_names)):
+                        inst_name = calendar_instrument_names[i]
+                        inst_cf = calendar_conversion_factors[i]
+                        if inst_name and inst_cf is not None:
+                            csv_data['tickerList'].append(f"'{inst_name}'")
+                            csv_data['convList'].append(str(inst_cf))
+                            # Assuming 'J' as a common month for illustration purposes if not explicitly defined by inputs
+                            csv_data['contractMonthsList'].append("'J'") # Placeholder, needs refinement
+                            csv_data['yearOffsetList'].append('0' if i == 0 else '1') # Simple assumption for 2 instruments
+
+                csv_data['tickerList'] = f"[{','.join(csv_data['tickerList'])}]"
+                csv_data['contractMonthsList'] = f"[{','.join(csv_data['contractMonthsList'])}]"
+                csv_data['yearOffsetList'] = f"[{','.join(csv_data['yearOffsetList'])}]"
+                csv_data['weightsList'] = csv_data['convList'] # For Calendar, weights might be similar to conversion factors
+                csv_data['convList'] = f"[{','.join(csv_data['convList'])}]"
+
+            elif trade_type == 'Quarterly':
+                csv_data['Name'] = f"Quarterly Spread {quarterly_q1} vs {quarterly_q2}"
+                csv_data['months'] = ''
+                csv_data['desc'] = f"Quarterly Spread {quarterly_q1} vs {quarterly_q2}"
+
+                if quarterly_instrument_names and quarterly_conversion_factors:
+                    for i in range(len(quarterly_instrument_names)):
+                        inst_name = quarterly_instrument_names[i]
+                        inst_cf = quarterly_conversion_factors[i]
+                        if inst_name and inst_cf is not None:
+                            csv_data['tickerList'].append(f"'{inst_name}'")
+                            csv_data['convList'].append(str(inst_cf))
+                            q1_months = quarterlyMonths.get(quarterly_q1, [])
+                            q2_months = quarterlyMonths.get(quarterly_q2, [])
+                            # Using the first month of each quarter for contractMonthsList
+                            csv_data['contractMonthsList'].append(f"'{q1_months[0]}'" if q1_months else "''")
+                            csv_data['contractMonthsList'].append(f"'{q2_months[0]}'" if q2_months else "''")
+                            csv_data['yearOffsetList'].append('0') # Assuming same year for Q vs Q
+
+                csv_data['tickerList'] = f"[{','.join(csv_data['tickerList'])}]"
+                csv_data['contractMonthsList'] = f"[{','.join(csv_data['contractMonthsList'])}]"
+                csv_data['yearOffsetList'] = f"[{','.join(csv_data['yearOffsetList'])}]"
+                csv_data['weightsList'] = csv_data['convList']
+                csv_data['convList'] = f"[{','.join(csv_data['convList'])}]"
+
+            df_csv = pd.DataFrame([csv_data])
+
+            output_columns = [
+                'Name', 'tickerList', 'contractMonthsList', 'yearOffsetList',
+                'weightsList', 'convList', 'rollFlag', 'months', 'desc', 'group', 'region', 'yearsBack'
+            ]
+            df_csv = df_csv[output_columns]
+
+            csv_file_path = 'userInputOnthefly.csv'
+            df_csv.to_csv(csv_file_path, index=False)
+            print(f"CSV file '{csv_file_path}' generated successfully.")
+            csv_output_data = df_csv.to_dict('records') # Convert DataFrame to a list of dicts for dcc.Store
+
+        return fig_price_evolution, fig_volatility, fig_hist, "", csv_output_data # Return csv_output_data
