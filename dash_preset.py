@@ -51,7 +51,7 @@ params = parse.quote_plus(connecting_string)
 engine = create_engine(f"mssql+pyodbc:///?odbc_connect={params}", fast_executemany=True)
 
 # Load data from SQL
-query = "SELECT * FROM [TradePriceAnalyzer].[contractMargins]"
+query = "SELECT * FROM [TradePriceAnalyzer].[SeasonalPrices]"
 data = pd.read_sql(query, con=engine)
 data["Date"] = pd.to_datetime(data["Date"], errors="coerce")
 data["LastTrade"] = pd.to_datetime(data["LastTrade"], errors="coerce")
