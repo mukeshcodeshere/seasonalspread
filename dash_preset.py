@@ -3,10 +3,6 @@ from dash import Dash, html, dcc, Input, Output, dash_table
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pandas as pd
-# from SeasonalPriceUtilitiesN import contractMonths, yearList, getSeasonalPrices, createSpread, createSpread_Custom, createSpread_Calendar, createSpread_Quarterly
-# Assuming SeasonalPriceUtilitiesN is not directly used in the Dash app itself for this problem,
-# but rather the data from the SQL table is pre-processed or contains the 'spread' column.
-# If these functions are meant to be used dynamically, they would need to be integrated into the callbacks.
 from sqlalchemy import create_engine
 from urllib import parse
 import datetime
@@ -14,6 +10,7 @@ from datetime import datetime, timedelta
 import numpy as np
 import os
 from dotenv import load_dotenv
+
 # Import shared styles - UPDATED
 from dash_styles import (
     CARD_HEADER_COLORS, CONTAINER_FLUID_CLASSES, CARD_COMMON_CLASSES, CARD_BORDER_RADIUS,
@@ -97,49 +94,56 @@ layout_preset = dbc.Container([
         ])
     ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 
+    # Results Section with Tabs for Charts and Data Table
     dbc.Card([
         dbc.CardHeader([
             html.Div([
-                html.I(className=f"fas fa-chart-line {ME_3_CLASS}"),
-                html.Span("Seasonal Spread Chart", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
-            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
-        ], className=CARD_HEADER_COLORS["info"]),
-        dbc.CardBody([
-            dcc.Graph(id='spread-figure', config=PLOTLY_GRAPH_CONFIG, className=GRAPH_CONTAINER_CLASSES),
-        ])
-    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
-
-    dbc.Card([
-        dbc.CardHeader([
-            html.Div([
-                html.I(className=f"fas fa-chart-bar {ME_3_CLASS}"),
-                html.Span("Spread Distribution Histogram", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
-            ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
-        ], className=CARD_HEADER_COLORS["info"]),
-        dbc.CardBody([
-            dcc.Graph(id='spread-histogram', config=PLOTLY_GRAPH_CONFIG, className=GRAPH_CONTAINER_CLASSES),
-        ])
-    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
-
-
-    dbc.Card([
-        dbc.CardHeader([
-            html.Div([
-                html.I(className=f"fas fa-table {ME_3_CLASS}"),
-                html.Span("Filtered Data Preview", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
+                html.I(className=f"fas fa-analytics {ME_3_CLASS}"),
+                html.Span("Analysis Results", className=f"{FW_BOLD_CLASS} {FS_4_CLASS}")
             ], className=f"{D_FLEX_CLASS} {ALIGN_ITEMS_CENTER_CLASS} {PY_3_CLASS}")
         ], className=CARD_HEADER_COLORS["success"]),
         dbc.CardBody([
-            dash_table.DataTable(
-                id='data-preview',
-                page_size=10,
-                style_table=DATATABLE_STYLE_TABLE,
-                style_cell=DATATABLE_STYLE_CELL,
-                style_header=DATATABLE_STYLE_HEADER
+            # Status Message
+            html.Div(id='loading-output', className=f"{TEXT_CENTER_CLASS} {MB_3_CLASS} {FW_BOLD_CLASS} {TEXT_MUTED_CLASS}"),
+
+            # Loading Component
+            dcc.Loading(
+                id="loading-graphs",
+                type="circle",
+                color="#007bff",
+                children=[
+                    # Chart Tabs
+                    dbc.Tabs([
+                        dbc.Tab([
+                            dcc.Graph(
+                                id='spread-figure',
+                                config=PLOTLY_GRAPH_CONFIG,
+                                className=GRAPH_CONTAINER_CLASSES
+                            )
+                        ], label="Seasonal Spread Chart", tab_id="seasonal-spread-tab", className=PY_3_CLASS),
+
+                        dbc.Tab([
+                            dcc.Graph(
+                                id='spread-histogram',
+                                config=PLOTLY_GRAPH_CONFIG,
+                                className=GRAPH_CONTAINER_CLASSES
+                            )
+                        ], label="Spread Distribution Histogram", tab_id="spread-dist-tab", className=PY_3_CLASS),
+
+                        dbc.Tab([
+                            dash_table.DataTable(
+                                id='data-preview',
+                                page_size=10,
+                                style_table=DATATABLE_STYLE_TABLE,
+                                style_cell=DATATABLE_STYLE_CELL,
+                                style_header=DATATABLE_STYLE_HEADER
+                            )
+                        ], label="Filtered Data Preview", tab_id="data-preview-tab", className=PY_3_CLASS),
+                    ], active_tab="seasonal-spread-tab", className=f"{MB_3_CLASS} nav-pills"),
+                ]
             )
         ])
-    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS)
-
+    ], className=CARD_COMMON_CLASSES, style=CARD_BORDER_RADIUS),
 ], fluid=True, className=CONTAINER_FLUID_CLASSES)
 
 
@@ -343,27 +347,27 @@ def register_callbacks(app):
                 )
 
                 hist_fig.add_vline(x=median_val, line=dict(dash="dash", color="green", width=2),
-                                     annotation_text=f"Median: {median_val:.2f}",
-                                     annotation_position="top left", name="Median",
-                                     annotation_font_color="green")
+                                    annotation_text=f"Median: {median_val:.2f}",
+                                    annotation_position="top left", name="Median",
+                                    annotation_font_color="green")
 
                 hist_fig.add_vline(x=median_val + std_dev, line=dict(dash="dot", color="orange", width=1.5),
-                                     annotation_text=f"+1 SD: {(median_val + std_dev):.2f}",
-                                     annotation_position="top right", name="+1 SD",
-                                     annotation_font_color="orange")
+                                    annotation_text=f"+1 SD: {(median_val + std_dev):.2f}",
+                                    annotation_position="top right", name="+1 SD",
+                                    annotation_font_color="orange")
                 hist_fig.add_vline(x=median_val - std_dev, line=dict(dash="dot", color="orange", width=1.5),
-                                     annotation_text=f"-1 SD: {(median_val - std_dev):.2f}",
-                                     annotation_position="bottom left", name="-1 SD",
-                                     annotation_font_color="orange")
+                                    annotation_text=f"-1 SD: {(median_val - std_dev):.2f}",
+                                    annotation_position="bottom left", name="-1 SD",
+                                    annotation_font_color="orange")
 
                 hist_fig.add_vline(x=median_val + (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
-                                     annotation_text=f"+2 SD: {(median_val + (2 * std_dev)):.2f}",
-                                     annotation_position="top right", name="+2 SD",
-                                     annotation_font_color="red")
+                                    annotation_text=f"+2 SD: {(median_val + (2 * std_dev)):.2f}",
+                                    annotation_position="top right", name="+2 SD",
+                                    annotation_font_color="red")
                 hist_fig.add_vline(x=median_val - (2 * std_dev), line=dict(dash="dot", color="red", width=1.5),
-                                     annotation_text=f"-2 SD: {(median_val - (2 * std_dev)):.2f}",
-                                     annotation_position="bottom left", name="-2 SD",
-                                     annotation_font_color="red")
+                                    annotation_text=f"-2 SD: {(median_val - (2 * std_dev)):.2f}",
+                                    annotation_position="bottom left", name="-2 SD",
+                                    annotation_font_color="red")
 
                 if latest_value is not None:
                     hist_fig.add_vline(x=latest_value, line=dict(dash="solid", color="blue", width=3),
